@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Heart, 
   ArrowUpDown, 
   Camera, 
-  RefreshCw,
-  CheckSquare,
-  Square,
-  Download,
-  X,
-  Loader2,
-  Play
+  RefreshCw, 
+  CheckSquare, 
+  Download, 
+  Loader2, 
+  Play,
+  Grid2X2,
+  Grid3X3
 } from 'lucide-react';
 import { PhotoCard } from './PhotoCard';
 import { downloadAlbumZip } from '../services/downloadService';
@@ -40,6 +40,33 @@ export function Gallery({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
+  const [mobileCols, setMobileCols] = useState(2); // 2 or 3 columns on mobile
+  const [screenSize, setScreenSize] = useState('mobile');
+
+  // Track window size for responsive masonry column count
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      if (window.innerWidth >= 1024) {
+        setScreenSize('desktop');
+      } else if (window.innerWidth >= 640) {
+        setScreenSize('tablet');
+      } else {
+        setScreenSize('mobile');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const activeCols = screenSize === 'desktop' ? 4 : screenSize === 'tablet' ? 3 : mobileCols;
+
+  // Distribute items round-robin across columns to maintain left-to-right, top-to-bottom chronological order
+  const columns = Array.from({ length: activeCols }, () => []);
+  items.forEach((item, index) => {
+    columns[index % activeCols].push(item);
+  });
 
   const scrollToUpload = () => {
     const el = document.getElementById('upload');
@@ -109,24 +136,24 @@ export function Gallery({
   };
 
   return (
-    <section id="gallery" className="py-20 relative bg-royal-ivory pb-28">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28">
+      <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8">
         {/* Section Title Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
+        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 px-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-800 text-xs font-cinzel font-semibold tracking-widest uppercase mb-3">
             <Sparkles className="w-3.5 h-3.5 text-gold-600" />
             Treasured Collection
           </div>
-          <h2 className="font-serif text-3xl sm:text-5xl text-royal-espresso mb-4">
+          <h2 className="font-serif text-3xl sm:text-5xl text-royal-espresso mb-3">
             {siteConfig.gallery.title}
           </h2>
-          <p className="font-sans text-sm sm:text-base text-royal-espresso/70 leading-relaxed">
+          <p className="font-sans text-xs sm:text-base text-royal-espresso/70 leading-relaxed">
             {siteConfig.gallery.subtitle}
           </p>
         </div>
 
         {/* Filter and Sort Toolbar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-10 pb-4 border-b border-gold-200/60">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6 sm:mb-8 pb-3 border-b border-gold-200/60 px-2 sm:px-0">
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
@@ -134,7 +161,7 @@ export function Gallery({
                 setFilter('all');
                 if (isSelectMode) setSelectedIds(new Set());
               }}
-              className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all ${
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all ${
                 filter === 'all'
                   ? 'bg-gold-600 text-white shadow-sm'
                   : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
@@ -148,7 +175,7 @@ export function Gallery({
                 setFilter('favourites');
                 if (isSelectMode) setSelectedIds(new Set());
               }}
-              className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
                 filter === 'favourites'
                   ? 'bg-gold-600 text-white shadow-sm'
                   : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
@@ -164,14 +191,35 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Slideshow, Select Photos, Sort Order & Refresh */}
-          <div className="flex items-center gap-2">
+          {/* Right Controls: Grid Toggle (mobile), Slideshow, Select Photos, Sort Order & Refresh */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            {/* Mobile Grid Density Toggle (2 cols vs 3 cols) */}
+            {screenSize === 'mobile' && items.length > 0 && (
+              <button
+                onClick={() => setMobileCols(mobileCols === 2 ? 3 : 2)}
+                className="px-2.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400"
+                title={mobileCols === 2 ? 'Switch to 3 columns' : 'Switch to 2 columns'}
+              >
+                {mobileCols === 2 ? (
+                  <>
+                    <Grid3X3 className="w-3.5 h-3.5 text-gold-700" />
+                    <span>3 Cols</span>
+                  </>
+                ) : (
+                  <>
+                    <Grid2X2 className="w-3.5 h-3.5 text-gold-700" />
+                    <span>2 Cols</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Play Slideshow Button */}
             {items.length > 0 && !isSelectMode && (
               <button
                 onClick={onStartSlideshow}
-                className="px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm"
-                title="Play Slideshow from the first photo"
+                className="px-3 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm"
+                title="Play Slideshow from beginning"
               >
                 <Play className="w-3.5 h-3.5 text-gold-600 fill-gold-500" />
                 <span>Slideshow</span>
@@ -185,20 +233,20 @@ export function Gallery({
                   setIsSelectMode(!isSelectMode);
                   if (isSelectMode) setSelectedIds(new Set());
                 }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 ${
                   isSelectMode
                     ? 'bg-gold-600 text-white shadow-sm'
                     : 'bg-white border border-gold-200 text-royal-espresso hover:border-gold-400'
                 }`}
               >
                 <CheckSquare className="w-3.5 h-3.5 text-gold-500" />
-                <span>{isSelectMode ? 'Cancel Selection' : 'Select Photos'}</span>
+                <span>{isSelectMode ? 'Cancel' : 'Select'}</span>
               </button>
             )}
 
-            <div className="flex items-center gap-1.5 bg-white border border-gold-200 rounded-full px-3 py-1.5 text-xs text-royal-espresso font-sans">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gold-600" />
-              <span className="text-royal-espresso/60 mr-1">Sort:</span>
+            {/* Sort Toggle */}
+            <div className="flex items-center gap-1 bg-white border border-gold-200 rounded-full px-2.5 py-1.5 text-xs text-royal-espresso font-sans">
+              <ArrowUpDown className="w-3 h-3 text-gold-600" />
               <button
                 onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
                 className="font-medium text-gold-800 hover:text-gold-900 capitalize"
@@ -207,34 +255,39 @@ export function Gallery({
               </button>
             </div>
 
+            {/* Refresh */}
             <button
               onClick={onRefresh}
-              className="p-2 rounded-full bg-white border border-gold-200 text-royal-espresso/70 hover:text-gold-700 hover:border-gold-400 transition"
+              className="p-1.5 sm:p-2 rounded-full bg-white border border-gold-200 text-royal-espresso/70 hover:text-gold-700 hover:border-gold-400 transition"
               aria-label="Refresh gallery"
               title="Refresh gallery"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
 
-        {/* Gallery Grid State: Loading Skeleton (Google Photos multi-column layout) */}
+        {/* Loading Skeleton with matching tight hairline columns */}
         {isLoading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl overflow-hidden bg-white border border-gold-100 shadow-sm animate-pulse"
-              >
-                <div className="aspect-square sm:aspect-[4/5] bg-royal-sand/50" />
+          <div className="flex gap-[2px] sm:gap-1 items-start">
+            {[...Array(activeCols)].map((_, colIdx) => (
+              <div key={colIdx} className="flex-1 flex flex-col gap-[2px] sm:gap-1">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-full bg-royal-sand/40 rounded-[2px] animate-pulse ${
+                      (i + colIdx) % 2 === 0 ? 'aspect-[3/4]' : 'aspect-square'
+                    }`}
+                  />
+                ))}
               </div>
             ))}
           </div>
         )}
 
-        {/* Gallery Grid State: Empty State */}
+        {/* Empty State */}
         {!isLoading && items.length === 0 && (
-          <div className="text-center py-20 px-4 rounded-2xl border-2 border-dashed border-gold-200 bg-white/60 max-w-2xl mx-auto">
+          <div className="text-center py-20 px-4 rounded-2xl border-2 border-dashed border-gold-200 bg-white/60 max-w-2xl mx-auto my-6">
             <div className="w-16 h-16 rounded-full bg-gold-100/70 border border-gold-300 text-gold-700 flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-gold-600" />
             </div>
@@ -266,24 +319,28 @@ export function Gallery({
           </div>
         )}
 
-        {/* Gallery Grid: Populated Items (Google Photos 2-column mobile layout) */}
+        {/* Populated Gallery: Google Photos Style Tight Hairline Mosaic Grid (Zero Cropping) */}
         {!isLoading && items.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
-            {items.map((item) => (
-              <PhotoCard
-                key={item.id}
-                item={item}
-                isFavourited={isFavourited(item.id)}
-                favouriteCount={getFavouriteCount(item.id)}
-                onToggleFavourite={onToggleFavourite}
-                onOpenLightbox={onOpenLightbox}
-                onDownload={onDownload}
-                onRequestDelete={onRequestDelete}
-                isSelectMode={isSelectMode}
-                isSelected={selectedIds.has(item.id)}
-                onToggleSelect={handleToggleSelect}
-                onLongPress={handleLongPress}
-              />
+          <div className="flex gap-[2px] sm:gap-1 md:gap-1.5 items-start justify-center">
+            {columns.map((colItems, colIdx) => (
+              <div key={colIdx} className="flex-1 flex flex-col gap-[2px] sm:gap-1 md:gap-1.5 min-w-0">
+                {colItems.map((item) => (
+                  <PhotoCard
+                    key={item.id}
+                    item={item}
+                    isFavourited={isFavourited(item.id)}
+                    favouriteCount={getFavouriteCount(item.id)}
+                    onToggleFavourite={onToggleFavourite}
+                    onOpenLightbox={onOpenLightbox}
+                    onDownload={onDownload}
+                    onRequestDelete={onRequestDelete}
+                    isSelectMode={isSelectMode}
+                    isSelected={selectedIds.has(item.id)}
+                    onToggleSelect={handleToggleSelect}
+                    onLongPress={handleLongPress}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}
@@ -291,10 +348,10 @@ export function Gallery({
 
       {/* Floating Sticky Bottom Bar for Multi-Select Download */}
       {isSelectMode && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-lg bg-royal-card/95 backdrop-blur-md border border-gold-300 shadow-2xl rounded-2xl p-3 sm:p-4 text-royal-espresso animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-lg bg-royal-card/95 backdrop-blur-md border border-gold-300 shadow-2xl rounded-2xl p-3 sm:p-4 text-royal-espresso animate-in slide-in-from-bottom-5 duration-200">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="font-serif text-sm sm:text-base font-semibold text-royal-espresso">
+              <span className="font-serif text-xs sm:text-base font-semibold text-royal-espresso">
                 {selectedIds.size} of {items.length} selected
               </span>
               <button
@@ -311,7 +368,7 @@ export function Gallery({
                   setIsSelectMode(false);
                   setSelectedIds(new Set());
                 }}
-                className="px-3 py-1.5 rounded-full border border-gold-200 text-xs font-sans text-royal-espresso hover:bg-gold-50 transition"
+                className="px-2.5 sm:px-3 py-1.5 rounded-full border border-gold-200 text-xs font-sans text-royal-espresso hover:bg-gold-50 transition"
               >
                 Cancel
               </button>
@@ -319,7 +376,7 @@ export function Gallery({
               <button
                 onClick={handleDownloadSelected}
                 disabled={selectedIds.size === 0 || isDownloadingSelected}
-                className="px-4 py-2 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white text-xs font-sans font-semibold uppercase tracking-wider shadow-sm transition flex items-center gap-1.5"
+                className="px-3.5 sm:px-4 py-2 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white text-xs font-sans font-semibold uppercase tracking-wider shadow-sm transition flex items-center gap-1.5"
               >
                 {isDownloadingSelected ? (
                   <>

@@ -2,14 +2,11 @@ import React, { useState, useRef } from 'react';
 import { 
   Heart, 
   Download, 
-  Maximize2, 
-  Clock, 
   MoreVertical, 
   Trash2,
   MessageCircle,
   Check
 } from 'lucide-react';
-import { formatMediaDate } from '../utils/formatDate';
 
 export function PhotoCard({
   item,
@@ -127,73 +124,92 @@ export function PhotoCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl bg-white border transition-all duration-300 hover:-translate-y-0.5 sm:hover:-translate-y-1 select-none ${
+      className={`group relative cursor-pointer overflow-hidden rounded-[2px] sm:rounded-sm bg-royal-sand/20 transition-all select-none ${
         isSelected
-          ? 'ring-3 sm:ring-4 ring-gold-500 border-gold-500 shadow-royal-lg scale-[0.98]'
-          : 'border-gold-200/60 shadow-sm hover:shadow-royal-lg'
+          ? 'ring-2 sm:ring-4 ring-gold-500 shadow-md scale-[0.98]'
+          : 'hover:opacity-95'
       }`}
     >
-      {/* Media Container with Google Photos style aspect ratio */}
-      <div className="relative aspect-square sm:aspect-[4/5] w-full overflow-hidden bg-royal-cream">
-        {/* Skeleton loading animation */}
-        {!imageLoaded && !hasError && (
-          <div className="absolute inset-0 bg-gradient-to-r from-royal-sand via-royal-cream to-royal-sand animate-pulse" />
-        )}
+      {/* Skeleton placeholder while image loads */}
+      {!imageLoaded && !hasError && (
+        <div className="w-full aspect-[4/5] bg-royal-sand/40 animate-pulse" />
+      )}
 
-        <img
-          src={item.url || item.file_path}
-          alt={item.file_name}
-          className={`w-full h-full object-cover transition-transform duration-700 ${
-            isSelectMode ? '' : 'group-hover:scale-105'
-          } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => {
-            setImageLoaded(true);
-            setHasError(true);
-          }}
-          loading="lazy"
-        />
+      {/* Natural uncropped photo - original length, width, and surrounding environment with zero cropping */}
+      <img
+        src={item.url || item.file_path}
+        alt={item.file_name}
+        className={`w-full h-auto block select-none ${
+          imageLoaded ? 'opacity-100' : 'hidden'
+        }`}
+        onLoad={() => setImageLoaded(true)}
+        onError={() => {
+          setImageLoaded(true);
+          setHasError(true);
+        }}
+        loading="lazy"
+      />
 
-        {/* Fallback broken image indicator */}
-        {hasError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-royal-sand/40 text-royal-espresso/60 p-2 text-center">
-            <span className="text-xl mb-1">🖼️</span>
-            <span className="text-[10px] font-sans">Unable to load</span>
+      {/* Fallback broken image indicator */}
+      {hasError && (
+        <div className="w-full aspect-[4/3] flex flex-col items-center justify-center bg-royal-sand/40 text-royal-espresso/60 p-2 text-center">
+          <span className="text-xl mb-1">🖼️</span>
+          <span className="text-[10px] font-sans">Unable to load</span>
+        </div>
+      )}
+
+      {/* Multi-Select Checkbox Badge (Top Left) */}
+      {isSelectMode && (
+        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 z-20">
+          <div
+            className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+              isSelected
+                ? 'bg-gold-500 border-white text-white shadow-md scale-110'
+                : 'bg-black/40 border-white/90 text-transparent'
+            }`}
+          >
+            <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Multi-Select Checkbox Badge (Top Left) */}
-        {isSelectMode && (
-          <div className="absolute top-2 left-2 z-20">
-            <div
-              className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center border-2 transition-all ${
-                isSelected
-                  ? 'bg-gold-500 border-white text-white shadow-md scale-110'
-                  : 'bg-black/35 border-white/90 text-transparent'
+      {/* Bottom Floating Control Bar with Direct 1-Tap Download Icon and Favourite Heart */}
+      {!isSelectMode && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-1.5 sm:px-2 flex items-center justify-between text-white transition-opacity duration-200 opacity-90 sm:opacity-0 sm:group-hover:opacity-100">
+          {/* Favourite Heart & Count */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavourite(item.id);
+            }}
+            className="action-button p-1 sm:p-1.5 rounded-full bg-black/40 hover:bg-black/60 active:scale-90 transition-all flex items-center gap-1 backdrop-blur-sm"
+            aria-label={isFavourited ? 'Remove favourite' : 'Add favourite'}
+          >
+            <Heart
+              className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors ${
+                isFavourited ? 'fill-red-500 text-red-500' : 'text-white'
               }`}
-            >
-              <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
-            </div>
-          </div>
-        )}
+            />
+            {favouriteCount > 0 && (
+              <span className="text-[10px] font-sans font-medium text-white/90 pr-0.5">
+                {favouriteCount}
+              </span>
+            )}
+          </button>
 
-        {/* Top Right Actions: 3-dots Menu + Favourite Button (When not in select mode) */}
-        {!isSelectMode && (
-          <div className="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 z-10 flex items-center gap-1 sm:gap-1.5">
-            {/* Quick Favourite */}
+          {/* Right Actions: Direct 1-Tap Download Icon + 3-Dots Menu */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Direct 1-Tap Download Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleFavourite(item.id);
+                onDownload(item);
               }}
-              className="action-button p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md border border-gold-300/50 text-royal-espresso hover:text-red-600 transition-all shadow-sm active:scale-90"
-              aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
+              className="action-button p-1 sm:p-1.5 rounded-full bg-black/40 hover:bg-gold-600 active:scale-90 transition-all text-white backdrop-blur-sm shadow-sm"
+              title="Download original photo"
+              aria-label="Download original photo"
             >
-              <Heart
-                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                  isFavourited ? 'fill-red-500 text-red-500' : 'text-royal-espresso/70'
-                }`}
-              />
+              <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
             </button>
 
             {/* 3-Dots Menu Trigger */}
@@ -203,16 +219,15 @@ export function PhotoCard({
                   e.stopPropagation();
                   setMenuOpen(!menuOpen);
                 }}
-                className="action-button p-1.5 sm:p-2 rounded-full bg-white/90 backdrop-blur-md border border-gold-300/50 text-royal-espresso hover:text-gold-800 transition-all shadow-sm"
+                className="action-button p-1 sm:p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-all text-white backdrop-blur-sm"
                 aria-label="More options"
               >
-                <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <MoreVertical className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
               </button>
 
-              {/* 3-Dots Dropdown Menu */}
               {menuOpen && (
-                <div 
-                  className="absolute right-0 top-9 sm:top-10 w-44 bg-white rounded-xl shadow-xl border border-gold-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150"
+                <div
+                  className="absolute right-0 bottom-8 sm:bottom-9 w-44 bg-white rounded-xl shadow-2xl border border-gold-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -252,57 +267,8 @@ export function PhotoCard({
               )}
             </div>
           </div>
-        )}
-
-        {/* Desktop Hover Gradient Overlay */}
-        {!isSelectMode && (
-          <div className="absolute inset-0 bg-gradient-to-t from-royal-espresso/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:flex flex-col justify-end p-3 text-white pointer-events-none">
-            <div className="flex items-center justify-between pointer-events-auto">
-              <span className="text-[11px] font-sans text-gold-200 flex items-center gap-1">
-                <Maximize2 className="w-3.5 h-3.5" /> Tap to view
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload(item);
-                }}
-                className="action-button p-1.5 rounded-full bg-white/20 hover:bg-gold-500 hover:text-white backdrop-blur-md text-white transition-all shadow-sm"
-                aria-label="Download original file"
-              >
-                <Download className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Clean Bottom Strip with Date, Likes, and Direct 1-Tap Download Icon */}
-      <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white flex items-center justify-between text-[10px] sm:text-[11px] text-royal-espresso/50 font-sans border-t border-gold-100/60">
-        <div className="flex items-center gap-1 truncate mr-1">
-          <Clock className="w-3 h-3 text-gold-600/70 shrink-0" />
-          <span className="truncate">{formatMediaDate(item.created_at)}</span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {favouriteCount > 0 && (
-            <span className="flex items-center gap-0.5 text-gold-700 font-medium">
-              <Heart className="w-2.5 h-2.5 fill-gold-500 text-gold-600" />
-              {favouriteCount}
-            </span>
-          )}
-          {/* Direct 1-Tap Download Icon on Every Picture */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDownload(item);
-            }}
-            className="action-button p-1 rounded-full text-gold-600 hover:text-gold-800 hover:bg-gold-100/70 active:scale-90 transition-all"
-            title="Download original photo"
-            aria-label="Download original photo"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
