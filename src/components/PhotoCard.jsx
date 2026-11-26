@@ -130,18 +130,21 @@ export function PhotoCard({
           : 'hover:opacity-95'
       }`}
     >
-      {/* Skeleton placeholder while image loads */}
+      {/* Skeleton overlay that fades out once loaded */}
       {!imageLoaded && !hasError && (
-        <div className="w-full aspect-[4/5] bg-royal-sand/40 animate-pulse" />
+        <div className="absolute inset-0 bg-royal-sand/40 animate-pulse pointer-events-none z-10" />
       )}
 
       {/* Natural uncropped photo - original length, width, and surrounding environment with zero cropping */}
       <img
+        ref={(el) => {
+          if (el && el.complete && !imageLoaded) {
+            setImageLoaded(true);
+          }
+        }}
         src={item.url || item.file_path}
         alt={item.file_name}
-        className={`w-full h-auto block select-none ${
-          imageLoaded ? 'opacity-100' : 'hidden'
-        }`}
+        className="w-full h-auto block select-none"
         onLoad={() => setImageLoaded(true)}
         onError={() => {
           setImageLoaded(true);
@@ -175,7 +178,7 @@ export function PhotoCard({
 
       {/* Bottom Floating Control Bar with Direct 1-Tap Download Icon and Favourite Heart */}
       {!isSelectMode && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-1.5 sm:px-2 flex items-center justify-between text-white transition-opacity duration-200 opacity-90 sm:opacity-0 sm:group-hover:opacity-100">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-6 pb-1.5 px-1.5 sm:px-2 flex items-center justify-between text-white transition-opacity duration-200 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 z-20">
           {/* Favourite Heart & Count */}
           <button
             onClick={(e) => {
