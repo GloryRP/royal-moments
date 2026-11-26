@@ -359,28 +359,20 @@ export function Hero() {
                 {siteConfig.couple.engagementDate}
               </motion.p>
 
-              {/* Editorial Frame Cover Image (Compact Panoramic Banner) */}
+              {/* Editorial Frame Cover Image - Completely Visible with No Clipping */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.55 }}
-                className="relative max-w-lg mx-auto rounded-xl p-1.5 bg-gradient-to-b from-gold-300/40 via-gold-100/20 to-gold-300/40 shadow-sm mb-3.5 group"
+                className="relative max-w-xs sm:max-w-sm mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md mb-3 group"
               >
-                <div className="relative overflow-hidden rounded-lg h-24 sm:h-32 md:h-36 bg-royal-cream">
+                <div className="relative overflow-hidden rounded-lg bg-royal-cream/60 flex items-center justify-center">
                   <img
                     src={siteConfig.hero.coverImage}
                     alt={siteConfig.hero.coverImageAlt}
-                    className="w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-auto max-h-[30vh] sm:max-h-[34vh] object-contain mx-auto rounded-lg"
                     loading="eager"
                   />
-                  {/* Subtle vignette gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-royal-espresso/75 via-transparent to-transparent pointer-events-none" />
-
-                  <div className="absolute bottom-2 left-3 right-3 text-left flex items-end justify-between text-white pointer-events-none">
-                    <p className="font-serif italic text-xs sm:text-sm text-royal-ivory line-clamp-1">
-                      "{siteConfig.hero.subtitle}"
-                    </p>
-                  </div>
                 </div>
               </motion.div>
 

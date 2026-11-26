@@ -81,7 +81,7 @@ export function DownloadModal({ isOpen, onClose, mediaItems = [] }) {
         </div>
 
         <p className="font-sans text-sm text-royal-espresso/70 mb-6 leading-relaxed">
-          {siteConfig.download.description} All photos and videos will be saved in their original pristine quality, organized neatly into separate folders.
+          {siteConfig.download.description} All photos will be saved in their original pristine quality into an organized ZIP archive.
         </p>
 
         {/* High item count memory alert if applicable */}

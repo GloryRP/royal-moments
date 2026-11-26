@@ -89,20 +89,8 @@ export const INITIAL_DEMO_MEDIA = [
     mime_type: 'image/jpeg',
     file_size: 3200000,
     contributor_name: 'Brother Leo',
-    caption: 'Spontaneous candid laugh during the speeches.',
+    caption: 'Spontaneous candid laugh during the celebration.',
     created_at: new Date(Date.now() - 3600000 * 15).toISOString(),
-    isDemo: true
-  },
-  {
-    id: 'demo-7',
-    file_path: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    file_name: 'Ring_Ceremony_Highlights.mp4',
-    media_type: 'video',
-    mime_type: 'video/mp4',
-    file_size: 15400000,
-    contributor_name: 'Best Man David',
-    caption: 'Short clip of the blessings and clapping!',
-    created_at: new Date(Date.now() - 3600000 * 18).toISOString(),
     isDemo: true
   }
 ];

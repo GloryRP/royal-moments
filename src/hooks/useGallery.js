@@ -44,11 +44,7 @@ export function useGallery(favouritesSet) {
     let result = [...media];
 
     // 1. Filter
-    if (filter === 'photos') {
-      result = result.filter((item) => item.media_type === 'image');
-    } else if (filter === 'videos') {
-      result = result.filter((item) => item.media_type === 'video');
-    } else if (filter === 'favourites') {
+    if (filter === 'favourites') {
       result = result.filter((item) => favouritesSet && favouritesSet.has(item.id));
     }
 

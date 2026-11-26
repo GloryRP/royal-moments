@@ -73,15 +73,14 @@ export async function uploadMediaFile(file, options = {}) {
   if (onProgress) onProgress(92);
 
   // Step 3: Insert metadata record into Supabase PostgreSQL
-  const isVideo = file.type.startsWith('video/') || /\.(mp4|mov)$/i.test(file.name);
   const mediaRecord = {
     file_path: publicUrl || path,
     file_name: file.name,
-    media_type: isVideo ? 'video' : 'image',
-    mime_type: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+    media_type: 'image',
+    mime_type: file.type || 'image/jpeg',
     file_size: file.size,
-    contributor_name: contributorName.trim() || 'Family Member',
-    caption: caption.trim() || null
+    contributor_name: 'Family',
+    caption: null
   };
 
   const { data: createdRecord, error: insertError } = await createMediaRecord(mediaRecord);

@@ -1,43 +1,32 @@
 import { siteConfig } from '../config/siteConfig';
 
 /**
- * Validates a file before upload
+ * Validates a photo file before upload (images only, no file size limit)
  * @param {File} file
- * @returns {{ valid: boolean, error?: string, isVideo: boolean }}
+ * @returns {{ valid: boolean, error?: string, isVideo: boolean, mediaType: string }}
  */
 export function validateMediaFile(file) {
   if (!file) {
     return { valid: false, error: 'No file provided' };
   }
 
-  const { allowedImageTypes, allowedVideoTypes, maxImageSizeMB, maxVideoSizeMB } = siteConfig.upload;
+  const { allowedImageTypes } = siteConfig.upload;
   const isImage = allowedImageTypes.includes(file.type.toLowerCase()) || 
                   /\.(jpg|jpeg|png|webp|heic)$/i.test(file.name);
-  const isVideo = allowedVideoTypes.includes(file.type.toLowerCase()) || 
-                  /\.(mp4|mov)$/i.test(file.name);
 
-  if (!isImage && !isVideo) {
+  if (!isImage) {
     return {
       valid: false,
-      error: `"${file.name}" has an unsupported format. Please upload JPG, PNG, WEBP, HEIC, MP4, or MOV.`,
+      error: `"${file.name}" is not an image. Please upload photos (JPG, PNG, WEBP, or HEIC).`,
       isVideo: false
     };
   }
 
-  const maxSizeBytes = (isVideo ? maxVideoSizeMB : maxImageSizeMB) * 1024 * 1024;
-  if (file.size > maxSizeBytes) {
-    const limitLabel = isVideo ? `${maxVideoSizeMB} MB` : `${maxImageSizeMB} MB`;
-    return {
-      valid: false,
-      error: `"${file.name}" (${formatFileSize(file.size)}) exceeds the maximum allowed size of ${limitLabel}.`,
-      isVideo
-    };
-  }
-
+  // No size limit enforced
   return {
     valid: true,
-    isVideo,
-    mediaType: isVideo ? 'video' : 'image'
+    isVideo: false,
+    mediaType: 'image'
   };
 }
 

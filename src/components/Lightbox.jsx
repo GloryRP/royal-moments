@@ -340,36 +340,16 @@ export function Lightbox({
           </button>
         )}
 
-        {/* Bottom Details Drawer */}
-        <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white z-20">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-            <div className="space-y-1">
-              {currentItem.caption && (
-                <p className="font-serif italic text-sm sm:text-base text-gold-100 max-w-2xl">
-                  "{currentItem.caption}"
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/70 font-sans">
-                <span className="flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-gold-400" />
-                  <strong className="text-white/90">{currentItem.contributor_name || 'Family Member'}</strong>
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-gold-400" />
-                  {formatMediaDate(currentItem.created_at)}
-                </span>
-                {currentItem.file_size && (
-                  <>
-                    <span>•</span>
-                    <span>{formatFileSize(currentItem.file_size)}</span>
-                  </>
-                )}
-              </div>
+        {/* Bottom Details Drawer - Clean (No Caption, No "Family Member") */}
+        <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-4 bg-gradient-to-t from-black/85 via-black/50 to-transparent text-white z-20">
+          <div className="max-w-4xl mx-auto flex items-center justify-between text-xs text-white/70 font-sans">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-gold-400" />
+              <span>{formatMediaDate(currentItem.created_at)}</span>
             </div>
 
             {/* Mobile zoom & swipe hint */}
-            <div className="sm:hidden text-[10px] text-white/50 tracking-wider uppercase font-sans">
+            <div className="text-[10px] text-white/50 tracking-wider uppercase font-sans">
               Double-tap or pinch to zoom • Swipe to browse
             </div>
           </div>

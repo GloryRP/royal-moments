@@ -1,8 +1,5 @@
 /**
  * Royal Moments — Central Configuration File
- * 
- * Customize couple details, dates, images, and gallery limits in this single file
- * without modifying UI components.
  */
 
 export const siteConfig = {
@@ -14,16 +11,16 @@ export const siteConfig = {
       return `${this.partnerOne} & ${this.partnerTwo}`;
     },
     monogram: "P & S",
-    engagementDate: "November 22, 2026",
+    engagementDate: "Sunday, November 22, 2026",
   },
 
   // Hero & Visual Identity
   hero: {
     heading: "Engagement Ceremony",
-    subtitle: "Every picture tells a beautiful story of two hearts united in joy.",
-    primaryCta: "Explore Our Memories",
-    secondaryCta: "Share Your Moments",
-    // Real couple engagement photograph
+    subtitle: "Two hearts united in love, celebrated with family.",
+    primaryCta: "Explore Memories",
+    secondaryCta: "Upload Photos",
+    // Real couple engagement photograph (complete hands, garland & rings)
     coverImage: "/couple-cover.jpg",
     coverImageAlt: "Prabhudas & Somya Engagement Hands with Garland & Ring",
   },
@@ -31,36 +28,29 @@ export const siteConfig = {
   // Gallery Configuration
   gallery: {
     title: "Our Memories",
-    subtitle: "A beautiful tapestry of laughter, candid glances, and unforgettable celebrations with our dearest family and friends.",
+    subtitle: "A cherished collection of laughter, smiles, and celebrations with our dearest family and friends.",
     pageSize: 24,
     defaultSort: "newest", // 'newest' | 'oldest'
   },
 
-  // Upload Limits & Validations
+  // Upload Configuration (No size limits, photos only)
   upload: {
-    title: "Add to Our Story",
-    subtitle: "Capture a smile? Snap a candid video? Please upload your photos and videos to immortalize this day with us.",
-    maxImageSizeMB: 20,
-    maxVideoSizeMB: 100,
+    title: "Add to Our Memories",
+    subtitle: "Tap below to upload your photos from the engagement ceremony.",
     allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/heic"],
-    allowedVideoTypes: ["video/mp4", "video/quicktime"],
-    requirePasscode: false,
-    passcodePrompt: "Enter family passcode to upload (if required):",
   },
 
   // Favourites
   favourites: {
     title: "Cherished Moments",
-    description: "Your personally saved moments. Note: Favourites are kept in your current browser device.",
-    emptyMessage: "You haven't saved any favourites yet. Tap the heart icon on any memory to collect it here.",
+    description: "Your personally saved moments on this device.",
+    emptyMessage: "You haven't saved any favourites yet. Tap the heart icon on any photo to save it here.",
   },
 
   // Download Album
   download: {
     title: "Download Full Album",
-    description: "Download all full-resolution photographs and videos into a single organized ZIP archive.",
-    warningThresholdCount: 200,
-    warningMemoryNotice: "For very large albums (>200 items), downloading in batches or selecting favorites is recommended.",
+    description: "Download all original quality photographs into a single organized ZIP archive.",
   },
 
   // Footer & Brand

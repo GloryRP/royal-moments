@@ -30,21 +30,10 @@ function devApiPlugin() {
               return res.end(JSON.stringify({ error: 'Invalid or missing upload authorization passcode' }));
             }
 
-            if (!fileName || !mimeType) {
+            if (!fileName) {
               res.statusCode = 400;
               res.setHeader('Content-Type', 'application/json');
-              return res.end(JSON.stringify({ error: 'File name and MIME type are required' }));
-            }
-
-            // Size checks
-            const isVideo = mimeType.startsWith('video/');
-            const maxSize = isVideo ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
-            if (fileSize && fileSize > maxSize) {
-              res.statusCode = 400;
-              res.setHeader('Content-Type', 'application/json');
-              return res.end(JSON.stringify({ 
-                error: `File size exceeds limit (${isVideo ? '100 MB' : '20 MB'})` 
-              }));
+              return res.end(JSON.stringify({ error: 'File name is required' }));
             }
 
             const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;

@@ -64,31 +64,7 @@ export function Gallery({
                   : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
               }`}
             >
-              All Moments
-            </button>
-
-            <button
-              onClick={() => setFilter('photos')}
-              className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
-                filter === 'photos'
-                  ? 'bg-gold-600 text-white shadow-sm'
-                  : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              Photos Only
-            </button>
-
-            <button
-              onClick={() => setFilter('videos')}
-              className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
-                filter === 'videos'
-                  ? 'bg-gold-600 text-white shadow-sm'
-                  : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" />
-              Videos Only
+              All Photos
             </button>
 
             <button
