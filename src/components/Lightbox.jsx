@@ -6,7 +6,6 @@ import {
   ChevronRight, 
   Heart, 
   Download, 
-  User, 
   Clock, 
   ZoomIn, 
   ZoomOut, 
@@ -14,13 +13,10 @@ import {
   MessageCircle, 
   MoreVertical, 
   Trash2, 
-  Share2,
-  Play,
-  Pause
+  Play, 
+  Pause 
 } from 'lucide-react';
 import { formatMediaDate } from '../utils/formatDate';
-import { formatFileSize } from '../utils/fileValidation';
-import toast from 'react-hot-toast';
 
 export function Lightbox({
   item,
@@ -46,6 +42,7 @@ export function Lightbox({
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const panStartPos = useRef({ x: 0, y: 0 });
+  const lastTapRef = useRef(0);
 
   // Sync current index when selected item changes
   useEffect(() => {
@@ -141,7 +138,25 @@ export function Lightbox({
     };
   }, [isOpen, onClose, handleNext, handlePrev]);
 
-  // Touch handlers for Swipe and Pinch-to-zoom + Multi-directional Pan
+  // Double-tap or double-click to toggle zoom & target tapped location
+  const handleDoubleTap = (coords) => {
+    if (zoomScale > 1) {
+      setZoomScale(1);
+      setPanPosition({ x: 0, y: 0 });
+    } else {
+      setZoomScale(2.5);
+      if (coords?.clientX && coords?.clientY) {
+        const midX = window.innerWidth / 2;
+        const midY = window.innerHeight / 2;
+        setPanPosition({
+          x: (midX - coords.clientX) * 1.2,
+          y: (midY - coords.clientY) * 1.2
+        });
+      }
+    }
+  };
+
+  // Touch handlers for Swipe, Pinch-to-zoom, Double-tap & Multi-directional Pan
   const onTouchStart = (e) => {
     if (e.touches.length === 2) {
       // Pinch gesture start
@@ -151,6 +166,16 @@ export function Lightbox({
       );
       setInitialPinchDist(dist);
     } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - lastTapRef.current < 320) {
+        // Double-tap zoom on mobile!
+        const touch = e.touches[0];
+        handleDoubleTap({ clientX: touch.clientX, clientY: touch.clientY });
+        lastTapRef.current = 0;
+        return;
+      }
+      lastTapRef.current = now;
+
       if (zoomScale > 1) {
         // 1 finger while zoomed in: Pan to any part of the photo
         isDragging.current = true;
@@ -173,7 +198,7 @@ export function Lightbox({
       );
       const ratio = dist / initialPinchDist;
       setZoomScale((prev) => {
-        const next = Math.min(4, Math.max(1, prev * (ratio > 1 ? 1.04 : 0.96)));
+        const next = Math.min(4, Math.max(1, prev * (ratio > 1 ? 1.05 : 0.95)));
         if (next === 1) setPanPosition({ x: 0, y: 0 });
         return next;
       });
@@ -230,24 +255,6 @@ export function Lightbox({
     isDragging.current = false;
   };
 
-  // Double-tap or double-click to toggle zoom & target tapped location
-  const handleDoubleTap = (e) => {
-    if (zoomScale > 1) {
-      setZoomScale(1);
-      setPanPosition({ x: 0, y: 0 });
-    } else {
-      setZoomScale(2.5);
-      if (e?.clientX && e?.clientY) {
-        const midX = window.innerWidth / 2;
-        const midY = window.innerHeight / 2;
-        setPanPosition({
-          x: (midX - e.clientX) * 1.2,
-          y: (midY - e.clientY) * 1.2
-        });
-      }
-    }
-  };
-
   // Direct WhatsApp share
   const handleWhatsAppShare = () => {
     if (!currentItem) return;
@@ -285,19 +292,19 @@ export function Lightbox({
         )}
 
         {/* Top Floating Control Bar */}
-        <div className="absolute top-0 left-0 right-0 p-3 sm:p-5 flex items-center justify-between z-30 bg-gradient-to-b from-black/85 via-black/45 to-transparent">
+        <div className="absolute top-0 left-0 right-0 p-2.5 sm:p-5 flex items-center justify-between z-30 bg-gradient-to-b from-black/85 via-black/45 to-transparent">
           <div className="text-white/80 font-sans text-xs sm:text-sm">
             <span className="font-serif italic text-gold-300">
               {currentIndex + 1} of {items.length || 1}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Slideshow Play / Pause Button */}
             {items.length > 1 && (
               <button
                 onClick={() => setIsSlideshowRunning(!isSlideshowRunning)}
-                className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-md ${
+                className={`p-1.5 sm:p-2.5 rounded-full transition-all flex items-center gap-1 shadow-md ${
                   isSlideshowRunning
                     ? 'bg-gold-500 text-white ring-2 ring-gold-300 animate-pulse'
                     : 'bg-white/10 hover:bg-white/20 text-white'
@@ -305,9 +312,9 @@ export function Lightbox({
                 title={isSlideshowRunning ? 'Pause slideshow' : 'Play slideshow'}
               >
                 {isSlideshowRunning ? (
-                  <Pause className="w-4 h-4 fill-white" />
+                  <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
                 ) : (
-                  <Play className="w-4 h-4 fill-white" />
+                  <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
                 )}
                 <span className="hidden sm:inline text-xs font-semibold">
                   {isSlideshowRunning ? 'Playing' : 'Slideshow'}
@@ -318,10 +325,10 @@ export function Lightbox({
             {/* Direct WhatsApp Share Button */}
             <button
               onClick={handleWhatsAppShare}
-              className="p-2 sm:p-2.5 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-white transition-all shadow-md flex items-center gap-1.5"
+              className="p-1.5 sm:p-2.5 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-white transition-all shadow-md flex items-center gap-1"
               title="Share on WhatsApp"
             >
-              <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               <span className="hidden sm:inline text-xs font-semibold">Share</span>
             </button>
 
@@ -332,7 +339,7 @@ export function Lightbox({
                   setZoomScale(1);
                   setPanPosition({ x: 0, y: 0 });
                 }}
-                className="px-2.5 py-1.5 rounded-full bg-gold-600/90 hover:bg-gold-500 text-white text-[11px] font-sans font-medium flex items-center gap-1 shadow-md transition"
+                className="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-full bg-gold-600 hover:bg-gold-500 text-white text-[10px] sm:text-[11px] font-sans font-medium flex items-center gap-1 shadow-md transition"
                 title="Reset zoom to 100%"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -340,9 +347,9 @@ export function Lightbox({
               </button>
             )}
 
-            {/* Zoom Controls (Images only) */}
+            {/* Active Zoom Controls (+ / -) — Visible directly on mobile and desktop */}
             {!isVideo && (
-              <div className="hidden sm:flex items-center gap-1 bg-white/10 rounded-full p-1 border border-white/10">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-white/15 rounded-full p-0.5 sm:p-1 border border-white/20 backdrop-blur-sm">
                 <button
                   onClick={() => setZoomScale((z) => {
                     const next = Math.max(1, z - 0.5);
@@ -350,21 +357,23 @@ export function Lightbox({
                     return next;
                   })}
                   disabled={zoomScale <= 1}
-                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
+                  className="p-1 sm:p-1.5 text-white hover:text-gold-300 disabled:opacity-30 transition"
                   title="Zoom Out"
+                  aria-label="Zoom Out"
                 >
-                  <ZoomOut className="w-4 h-4" />
+                  <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
-                <span className="text-[11px] font-mono text-gold-200 px-1">
+                <span className="text-[10px] sm:text-[11px] font-mono text-gold-200 px-0.5 sm:px-1 min-w-[32px] text-center">
                   {Math.round(zoomScale * 100)}%
                 </span>
                 <button
                   onClick={() => setZoomScale((z) => Math.min(4, z + 0.5))}
                   disabled={zoomScale >= 4}
-                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
+                  className="p-1 sm:p-1.5 text-white hover:text-gold-300 disabled:opacity-30 transition"
                   title="Zoom In"
+                  aria-label="Zoom In"
                 >
-                  <ZoomIn className="w-4 h-4" />
+                  <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             )}
@@ -372,11 +381,11 @@ export function Lightbox({
             {/* Favourite button */}
             <button
               onClick={() => onToggleFavourite(currentItem.id)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+              className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
               aria-label="Toggle favourite"
             >
               <Heart
-                className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                className={`w-3.5 h-3.5 sm:w-5 sm:h-5 ${
                   isFavourited(currentItem.id) ? 'fill-red-500 text-red-500' : 'text-white'
                 }`}
               />
@@ -388,20 +397,20 @@ export function Lightbox({
             {/* Download Original button */}
             <button
               onClick={() => onDownload(currentItem)}
-              className="p-2 sm:p-2.5 rounded-full bg-gold-600 hover:bg-gold-500 text-white transition-all shadow-md"
+              className="p-1.5 sm:p-2.5 rounded-full bg-gold-600 hover:bg-gold-500 text-white transition-all shadow-md"
               title="Download original"
             >
-              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Download className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </button>
 
             {/* 3-Dots Options Menu */}
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                className="p-1.5 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
                 title="More options"
               >
-                <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+                <MoreVertical className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
               </button>
 
               {menuOpen && (
@@ -444,10 +453,10 @@ export function Lightbox({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+              className="p-1.5 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
               aria-label="Close lightbox"
             >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              <X className="w-4 h-4 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>
@@ -466,7 +475,7 @@ export function Lightbox({
         {/* Main Content Area with Pinch/Double-tap Zoom & Free Multi-directional Pan */}
         <div 
           className="relative w-full h-full flex flex-col items-center justify-center p-2 sm:p-6 pb-16 sm:pb-20 overflow-hidden cursor-default"
-          onDoubleClick={!isVideo ? handleDoubleTap : undefined}
+          onDoubleClick={!isVideo ? (e) => handleDoubleTap({ clientX: e.clientX, clientY: e.clientY }) : undefined}
           onMouseDown={!isVideo ? handleMouseDown : undefined}
           onMouseMove={!isVideo ? handleMouseMove : undefined}
           onMouseUp={!isVideo ? handleMouseUp : undefined}
@@ -483,22 +492,27 @@ export function Lightbox({
               />
             ) : (
               <AnimatePresence mode="wait">
-                <motion.img
+                <motion.div
                   key={currentItem.id || currentIndex}
-                  src={currentItem.url || currentItem.file_path}
-                  alt={currentItem.file_name}
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.02 }}
-                  transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                  className="max-h-[76vh] max-w-[94vw] sm:max-w-[88vw] object-contain rounded-xl shadow-2xl select-none"
-                  style={{
-                    transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0px) scale(${zoomScale})`,
-                    cursor: zoomScale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'zoom-in',
-                    touchAction: 'none'
-                  }}
-                  draggable={false}
-                />
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                  className="flex items-center justify-center max-h-full max-w-full"
+                >
+                  <img
+                    src={currentItem.url || currentItem.file_path}
+                    alt={currentItem.file_name}
+                    className="max-h-[76vh] max-w-[94vw] sm:max-w-[88vw] object-contain rounded-xl shadow-2xl select-none"
+                    style={{
+                      transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0px) scale(${zoomScale})`,
+                      transition: isDragging.current ? 'none' : 'transform 0.15s ease-out',
+                      cursor: zoomScale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'zoom-in',
+                      touchAction: 'none'
+                    }}
+                    draggable={false}
+                  />
+                </motion.div>
               </AnimatePresence>
             )}
           </div>
@@ -515,8 +529,8 @@ export function Lightbox({
           </button>
         )}
 
-        {/* Bottom Details Drawer - Clean (No Caption, No "Family Member") */}
-        <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-4 bg-gradient-to-t from-black/85 via-black/50 to-transparent text-white z-20">
+        {/* Bottom Details Drawer */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/85 via-black/50 to-transparent text-white z-20">
           <div className="max-w-4xl mx-auto flex items-center justify-between text-xs text-white/70 font-sans">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-gold-400" />
@@ -525,7 +539,7 @@ export function Lightbox({
 
             {/* Mobile zoom & swipe hint */}
             <div className="text-[10px] text-white/50 tracking-wider uppercase font-sans">
-              Double-tap or pinch to zoom • Swipe to browse
+              Tap + or double-tap to zoom • Drag to pan
             </div>
           </div>
         </div>
