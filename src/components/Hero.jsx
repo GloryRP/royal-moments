@@ -139,17 +139,19 @@ export function FlyingButterfly({ style = {}, className = '', scale = 1 }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   HERO SECTION — DIRECT ENVELOPE OPENING (NO SIDEWAYS DRIFT OR DELAY)
+   HERO SECTION — SLOW, MAJESTIC ENVELOPE UNVEILING (CINEMATIC BUTTERFLY FLIGHT)
    ══════════════════════════════════════════════════════════════════════════════ */
 export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
-  // Animated opening sequence with flying butterfly
+  // Slow, majestic opening sequence with ascending butterfly flight
   const handleOpenEnvelope = () => {
     if (isOpening || isOpen) return;
     setIsOpening(true);
+
+    // Graceful 1.8-second cinematic delay allowing butterfly to soar
     setTimeout(() => {
       setIsOpening(false);
       if (onOpen) {
@@ -157,7 +159,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
       } else {
         setInternalIsOpen(true);
       }
-    }, 700);
+    }, 1800);
   };
 
   const handleReclose = () => {
@@ -177,7 +179,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
   return (
     <section
       id="hero"
-      className={`relative flex items-center justify-center transition-all duration-500 ${
+      className={`relative flex items-center justify-center transition-all duration-700 ${
         !isOpen
           ? 'min-h-[100dvh] h-[100dvh] w-full overflow-hidden py-4 px-3'
           : 'min-h-[calc(100vh-64px)] pt-14 pb-8 sm:pt-16 sm:pb-12'
@@ -188,34 +190,48 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gold-200/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* ──────────────────────────────────────────────────────────────────────────
-          STATE 1: CLEAN MINIMAL ENVELOPE GATE (No text above, fits mobile screen)
+          STATE 1: CLEAN MINIMAL ENVELOPE GATE (Fits mobile screen, no text above)
           ────────────────────────────────────────────────────────────────────────── */}
       {!isOpen ? (
         <motion.div
           key="sealed-envelope-view"
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.05 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
           className="relative z-20 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] mx-auto px-2 text-center flex flex-col items-center justify-center my-auto"
         >
-          {/* Animated Ascending Butterfly when Tap to Open is clicked */}
+          {/* Slow, Majestic Ascending Butterfly when Tap to Open is clicked */}
           {isOpening && (
             <motion.div
-              initial={{ opacity: 0, y: 0, scale: 0.6 }}
-              animate={{ opacity: [0, 1, 1, 0], y: [0, -120, -260], scale: [0.6, 1.15, 0.9] }}
-              transition={{ duration: 0.7, ease: 'easeOut' }}
-              className="absolute z-30 pointer-events-none"
+              initial={{ opacity: 0, y: 10, scale: 0.6, rotate: -4 }}
+              animate={{
+                opacity: [0, 1, 1, 1, 0],
+                y: [0, -60, -160, -280, -420],
+                x: [0, 20, -25, 20, -10],
+                scale: [0.6, 1, 1.25, 1.1, 0.85],
+                rotate: [-4, 8, -6, 5, 0]
+              }}
+              transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }}
+              className="absolute z-40 pointer-events-none"
             >
-              <FlyingButterfly scale={1} />
+              <FlyingButterfly scale={1.25} />
             </motion.div>
           )}
 
           {/* Clickable Envelope Container - Fits Mobile Screen Perfectly with NO details above */}
           <motion.div
             onClick={handleOpenEnvelope}
-            animate={isOpening ? { scale: [1, 1.04, 0.96], opacity: [1, 1, 0.7] } : {}}
-            transition={{ duration: 0.7 }}
+            animate={
+              isOpening
+                ? {
+                    scale: [1, 1.03, 1.05, 0.96],
+                    opacity: [1, 1, 0.9, 0],
+                    filter: ['brightness(1)', 'brightness(1.08)', 'brightness(1.15)', 'brightness(1.05)']
+                  }
+                : {}
+            }
+            transition={{ duration: 1.8, ease: 'easeInOut' }}
             className="group relative cursor-pointer mx-auto w-full max-w-[290px] xs:max-w-[330px] sm:max-w-[380px] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
             title="Click to open invitation"
           >
@@ -245,13 +261,13 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
         </motion.div>
       ) : (
         /* ──────────────────────────────────────────────────────────────────────────
-            STATE 2: REVEALED INVITATION CARD (Smooth Entrance Animation)
+            STATE 2: REVEALED INVITATION CARD (Slow, Silky-Smooth Majestic Entrance)
             ────────────────────────────────────────────────────────────────────────── */
         <motion.div
           key="revealed-hero-content"
-          initial={{ opacity: 0, y: 35, scale: 0.94 }}
+          initial={{ opacity: 0, y: 55, scale: 0.92 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-20 max-w-2xl w-full mx-auto px-4 text-center my-auto"
         >
           {/* Inner White Letter Card Presentation */}
@@ -271,46 +287,58 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
               </button>
             </div>
 
-            {/* Fluttering Butterfly - Ascending straight up from center */}
+            {/* Fluttering Butterfly - Gently floating above names */}
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, scale: 0.8, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 1.0, delay: 0.25, ease: 'easeOut' }}
               className="flex justify-center -mt-2 mb-1"
             >
               <FlyingButterfly scale={0.78} />
             </motion.div>
 
-            {/* Heading: Engagement Ceremony */}
-            <p className="font-cinzel text-[10px] sm:text-xs uppercase tracking-[0.3em] text-gold-800 font-semibold mb-1">
-              {siteConfig.hero.heading}
-            </p>
+            {/* Staggered Content Presentation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, delay: 0.45, ease: 'easeOut' }}
+            >
+              {/* Heading: Engagement Ceremony */}
+              <p className="font-cinzel text-[10px] sm:text-xs uppercase tracking-[0.3em] text-gold-800 font-semibold mb-1">
+                {siteConfig.hero.heading}
+              </p>
 
-            {/* Couple's Names in Flowing Calligraphy */}
-            <div className="mb-1">
-              <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
-                {siteConfig.couple.partnerOne}
-              </h1>
-              <div className="font-pinyon text-2xl sm:text-3xl text-gold-600/80 my-0.5">&amp;</div>
-              <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
-                {siteConfig.couple.partnerTwo}
-              </h1>
-            </div>
+              {/* Couple's Names in Flowing Calligraphy */}
+              <div className="mb-1">
+                <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
+                  {siteConfig.couple.partnerOne}
+                </h1>
+                <div className="font-pinyon text-2xl sm:text-3xl text-gold-600/80 my-0.5">&amp;</div>
+                <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
+                  {siteConfig.couple.partnerTwo}
+                </h1>
+              </div>
 
-            {/* Delicate Gold Divider */}
-            <div className="flex items-center justify-center gap-2 max-w-xs mx-auto my-2">
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-gold-400" />
-              <div className="w-1.5 h-1.5 rotate-45 border border-gold-500 bg-gold-400/40" />
-              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-gold-400" />
-            </div>
+              {/* Delicate Gold Divider */}
+              <div className="flex items-center justify-center gap-2 max-w-xs mx-auto my-2">
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-gold-400" />
+                <div className="w-1.5 h-1.5 rotate-45 border border-gold-500 bg-gold-400/40" />
+                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-gold-400" />
+              </div>
 
-            {/* Date */}
-            <p className="font-cinzel text-[10px] sm:text-xs tracking-[0.2em] uppercase text-royal-espresso/70 mb-3">
-              {siteConfig.couple.engagementDate}
-            </p>
+              {/* Date */}
+              <p className="font-cinzel text-[10px] sm:text-xs tracking-[0.2em] uppercase text-royal-espresso/70 mb-3">
+                {siteConfig.couple.engagementDate}
+              </p>
+            </motion.div>
 
             {/* Editorial Frame Cover Image - Completely Visible Hands & Garland */}
-            <div className="relative max-w-[250px] sm:max-w-[280px] mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md group">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 1.0, delay: 0.65, ease: 'easeOut' }}
+              className="relative max-w-[250px] sm:max-w-[280px] mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md group"
+            >
               <div className="relative overflow-hidden rounded-lg bg-royal-cream/60 flex items-center justify-center">
                 <img
                   src={siteConfig.hero.coverImage}
@@ -319,14 +347,14 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
                   loading="eager"
                 />
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Action Buttons - Located OUTSIDE & BELOW the White Box */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
+            transition={{ duration: 1.0, delay: 0.85, ease: 'easeOut' }}
             className="flex flex-row items-center justify-center gap-3 max-w-sm mx-auto mt-4 px-1"
           >
             <button
@@ -345,7 +373,12 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
           </motion.div>
 
           {/* Scroll Indicator */}
-          <div className="mt-3">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 1.1 }}
+            className="mt-3"
+          >
             <button
               onClick={() => scrollTo('gallery')}
               className="inline-flex flex-col items-center gap-0.5 text-royal-espresso/60 hover:text-gold-700 transition-colors"
@@ -354,7 +387,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
               <span className="font-cinzel text-[9px] uppercase tracking-widest">Explore Memories</span>
               <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
             </button>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </section>

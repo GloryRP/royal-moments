@@ -80,16 +80,43 @@ export function Lightbox({
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   }, [items.length]);
 
-  // Slideshow auto-advance (every 3.5 seconds)
+  // Slideshow auto-advance: plays each photo for 3.5s, then automatically stops after the last image and returns to Explore Memories
   useEffect(() => {
-    if (!isOpen || !isSlideshowRunning || items.length <= 1) return;
+    if (!isOpen || !isSlideshowRunning || items.length === 0) return;
+
+    if (items.length === 1) {
+      const singleTimer = setTimeout(() => {
+        setIsSlideshowRunning(false);
+        onClose();
+        setTimeout(() => {
+          const el = document.getElementById('gallery');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+      }, 3500);
+      return () => clearTimeout(singleTimer);
+    }
 
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % items.length);
+      setCurrentIndex((prev) => {
+        if (prev >= items.length - 1) {
+          // All images have finished playing: stop slideshow automatically and return to Explore Memories
+          clearInterval(timer);
+          setIsSlideshowRunning(false);
+          setTimeout(() => {
+            onClose();
+            setTimeout(() => {
+              const el = document.getElementById('gallery');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+          }, 400);
+          return prev;
+        }
+        return prev + 1;
+      });
     }, 3500);
 
     return () => clearInterval(timer);
-  }, [isOpen, isSlideshowRunning, items.length]);
+  }, [isOpen, isSlideshowRunning, items.length, onClose]);
 
   // Keyboard navigation & Escape listener
   useEffect(() => {
