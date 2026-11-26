@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Sparkles, 
-  Image as ImageIcon, 
-  Video, 
   Heart, 
   ArrowUpDown, 
   Camera, 
   RefreshCw,
-  SlidersHorizontal
+  CheckSquare,
+  Square,
+  Download,
+  X,
+  Loader2
 } from 'lucide-react';
 import { PhotoCard } from './PhotoCard';
+import { downloadAlbumZip } from '../services/downloadService';
 import { siteConfig } from '../config/siteConfig';
+import toast from 'react-hot-toast';
 
 export function Gallery({
   items = [],
@@ -30,13 +34,65 @@ export function Gallery({
   onRequestDelete,
   onRefresh
 }) {
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
+
   const scrollToUpload = () => {
     const el = document.getElementById('upload');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map((i) => i.id)));
+    }
+  };
+
+  const handleDownloadSelected = async () => {
+    const selectedItems = items.filter((item) => selectedIds.has(item.id));
+    if (selectedItems.length === 0) {
+      toast.error('Please select at least one photo to download.');
+      return;
+    }
+
+    setIsDownloadingSelected(true);
+    setDownloadProgress({ percent: 10, current: 0, total: selectedItems.length });
+
+    try {
+      await downloadAlbumZip(selectedItems, (prog) => {
+        setDownloadProgress(prog);
+      });
+      toast.success(`Downloaded ${selectedItems.length} selected photos as ZIP!`, {
+        icon: '🎁'
+      });
+      setIsSelectMode(false);
+      setSelectedIds(new Set());
+    } catch (err) {
+      toast.error(`Download failed: ${err.message}`);
+    } finally {
+      setIsDownloadingSelected(false);
+      setDownloadProgress(null);
+    }
+  };
+
   return (
-    <section id="gallery" className="py-20 relative bg-royal-ivory">
+    <section id="gallery" className="py-20 relative bg-royal-ivory pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Title Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
@@ -57,7 +113,10 @@ export function Gallery({
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
-              onClick={() => setFilter('all')}
+              onClick={() => {
+                setFilter('all');
+                if (isSelectMode) setSelectedIds(new Set());
+              }}
               className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all ${
                 filter === 'all'
                   ? 'bg-gold-600 text-white shadow-sm'
@@ -68,7 +127,10 @@ export function Gallery({
             </button>
 
             <button
-              onClick={() => setFilter('favourites')}
+              onClick={() => {
+                setFilter('favourites');
+                if (isSelectMode) setSelectedIds(new Set());
+              }}
               className={`px-4 py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
                 filter === 'favourites'
                   ? 'bg-gold-600 text-white shadow-sm'
@@ -85,8 +147,26 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Sort Order & Refresh */}
-          <div className="flex items-center gap-3">
+          {/* Right Controls: Select Photos, Sort Order & Refresh */}
+          <div className="flex items-center gap-2.5">
+            {/* Multi-Select Toggle Button */}
+            {items.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsSelectMode(!isSelectMode);
+                  if (isSelectMode) setSelectedIds(new Set());
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 ${
+                  isSelectMode
+                    ? 'bg-gold-600 text-white shadow-sm'
+                    : 'bg-white border border-gold-200 text-royal-espresso hover:border-gold-400'
+                }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5 text-gold-500" />
+                <span>{isSelectMode ? 'Cancel Selection' : 'Select Photos'}</span>
+              </button>
+            )}
+
             <div className="flex items-center gap-1.5 bg-white border border-gold-200 rounded-full px-3 py-1.5 text-xs text-royal-espresso font-sans">
               <ArrowUpDown className="w-3.5 h-3.5 text-gold-600" />
               <span className="text-royal-espresso/60 mr-1">Sort:</span>
@@ -94,7 +174,7 @@ export function Gallery({
                 onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
                 className="font-medium text-gold-800 hover:text-gold-900 capitalize"
               >
-                {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                {sortOrder === 'newest' ? 'Newest' : 'Oldest'}
               </button>
             </div>
 
@@ -118,10 +198,6 @@ export function Gallery({
                 className="rounded-xl overflow-hidden bg-white border border-gold-100 shadow-sm animate-pulse"
               >
                 <div className="aspect-[4/5] bg-royal-sand/50" />
-                <div className="p-4 space-y-2">
-                  <div className="h-4 bg-royal-sand/60 rounded w-3/4" />
-                  <div className="h-3 bg-royal-sand/40 rounded w-1/2" />
-                </div>
               </div>
             ))}
           </div>
@@ -136,19 +212,19 @@ export function Gallery({
             <h3 className="font-serif text-2xl text-royal-espresso mb-2">
               {filter === 'favourites'
                 ? 'No Favourites Saved Yet'
-                : 'No Memories in this View Yet'}
+                : 'No Photos Uploaded Yet'}
             </h3>
             <p className="font-sans text-sm text-royal-espresso/60 max-w-md mx-auto mb-6">
               {filter === 'favourites'
                 ? siteConfig.favourites.emptyMessage
-                : 'Be the first family member to upload a cherished photograph or video from the celebration!'}
+                : 'Be the first family member to upload a photo from Prabhudas & Somya’s engagement!'}
             </p>
             {filter === 'favourites' ? (
               <button
                 onClick={() => setFilter('all')}
                 className="px-6 py-2.5 rounded-full bg-gold-600 hover:bg-gold-700 text-white font-sans text-xs uppercase tracking-wider font-semibold shadow-sm transition"
               >
-                View All Memories
+                View All Photos
               </button>
             ) : (
               <button
@@ -174,11 +250,63 @@ export function Gallery({
                 onOpenLightbox={onOpenLightbox}
                 onDownload={onDownload}
                 onRequestDelete={onRequestDelete}
+                isSelectMode={isSelectMode}
+                isSelected={selectedIds.has(item.id)}
+                onToggleSelect={handleToggleSelect}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Floating Sticky Bottom Bar for Multi-Select Download */}
+      {isSelectMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-lg bg-royal-card/95 backdrop-blur-md border border-gold-300 shadow-2xl rounded-2xl p-3 sm:p-4 text-royal-espresso animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-serif text-sm sm:text-base font-semibold text-royal-espresso">
+                {selectedIds.size} of {items.length} selected
+              </span>
+              <button
+                onClick={handleSelectAll}
+                className="text-[11px] font-sans text-gold-700 hover:text-gold-900 underline ml-1"
+              >
+                {selectedIds.size === items.length ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedIds(new Set());
+                }}
+                className="px-3 py-1.5 rounded-full border border-gold-200 text-xs font-sans text-royal-espresso hover:bg-gold-50 transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDownloadSelected}
+                disabled={selectedIds.size === 0 || isDownloadingSelected}
+                className="px-4 py-2 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white text-xs font-sans font-semibold uppercase tracking-wider shadow-sm transition flex items-center gap-1.5"
+              >
+                {isDownloadingSelected ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Packaging...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download ({selectedIds.size})</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
