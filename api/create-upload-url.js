@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('media')
-      .createSignedUploadUrl(storagePath);
+      .createSignedUploadUrl(storagePath, 3600);
 
     if (uploadError) {
       return res.status(500).json({ error: `Storage error: ${uploadError.message}` });

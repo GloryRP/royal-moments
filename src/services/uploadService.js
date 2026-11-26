@@ -2,14 +2,41 @@ import { createMediaRecord } from './mediaService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 /**
- * Uploads a single media file to Supabase
- * Uses signed upload URL with direct client fallback to ensure 100% reliable cloud uploads.
+ * Normalizes file MIME types across mobile browsers and cameras
+ * (e.g. Android cameras often report .jpg as 'image/jpg' or empty, which can fail strict storage filters)
+ */
+export function getStandardMimeType(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'heic') return 'image/heic';
+  if (ext === 'heif') return 'image/heif';
+  if (ext === 'avif') return 'image/avif';
+  if (ext === 'gif') return 'image/gif';
+  if (ext === 'mp4') return 'video/mp4';
+  if (ext === 'mov') return 'video/quicktime';
+  return file.type || 'image/jpeg';
+}
+
+/**
+ * Generates a clean, unique cloud storage path for a file
+ */
+function generateStoragePath(file) {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const safeBaseName = file.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+  const timestamp = Date.now();
+  const randomHex = Math.random().toString(36).substring(2, 9);
+  return `photos/${timestamp}_${randomHex}_${safeBaseName}.${ext}`;
+}
+
+/**
+ * Uploads a single media file to Supabase with automatic retry and multi-strategy fallbacks
  * 
  * @param {File} file 
  * @param {object} options 
  * @param {string} options.contributorName
  * @param {string} options.caption
- * @param {string} options.passcode
  * @param {function} options.onProgress
  * @returns {Promise<object>} Created media record
  */
@@ -18,86 +45,141 @@ export async function uploadMediaFile(file, options = {}) {
 
   if (onProgress) onProgress(10);
 
-  // If in pure Demo mode (Supabase not configured in client), simulate realistic upload
+  // If in pure Demo mode (Supabase not configured in client), simulate upload
   if (!isSupabaseConfigured()) {
     return simulateDemoUpload(file, 'Family Member', '', onProgress);
   }
 
-  // Strategy 1: Attempt signed upload authorization via serverless API
+  const mimeType = getStandardMimeType(file);
+  const storagePath = generateStoragePath(file);
+
+  // Strategy 1: Direct Supabase Storage REST API upload with real-time XHR progress
+  // (Fastest, zero-latency direct upload directly from client to Supabase Storage)
   try {
-    const res = await fetch('/api/create-upload-url', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fileName: file.name,
-        mimeType: file.type || 'image/jpeg',
-        fileSize: file.size
-      })
-    });
-
-    if (res.ok) {
-      const authData = await res.json();
-      const { signedUrl, path, publicUrl } = authData;
-      if (signedUrl) {
-        if (onProgress) onProgress(40);
-
-        // Upload directly to signed storage URL
-        await uploadWithProgress(signedUrl, file, (progressPercent) => {
-          const mapped = 40 + Math.round(progressPercent * 0.45);
-          if (onProgress) onProgress(mapped);
-        });
-
-        if (onProgress) onProgress(90);
-
-        // Save metadata record
-        const mediaRecord = {
-          file_path: publicUrl || path,
-          file_name: file.name,
-          media_type: 'image',
-          mime_type: file.type || 'image/jpeg',
-          file_size: file.size,
-          contributor_name: 'Family',
-          caption: null
-        };
-
-        const { data: createdRecord, error: insertError } = await createMediaRecord(mediaRecord);
-        if (insertError) {
-          throw new Error(`Failed to save photo details: ${insertError}`);
-        }
-
-        if (onProgress) onProgress(100);
-        return createdRecord;
-      }
-    }
-  } catch (err) {
-    console.warn('Signed URL upload attempt failed, falling back to direct Supabase upload:', err);
+    const record = await uploadWithRetry(() => uploadDirectWithXhr(storagePath, file, mimeType, onProgress), 2);
+    return record;
+  } catch (directXhrErr) {
+    console.warn('Direct XHR upload attempt failed, trying Supabase SDK upload:', directXhrErr);
   }
 
-  // Strategy 2: Direct Supabase Storage upload (100% reliable fallback)
-  return uploadDirectToSupabase(file, onProgress);
+  // Strategy 2: Supabase Storage JavaScript Client upload
+  try {
+    const record = await uploadDirectViaSdk(storagePath, file, mimeType, onProgress);
+    return record;
+  } catch (sdkErr) {
+    console.warn('Supabase SDK upload failed, trying Signed URL upload fallback:', sdkErr);
+  }
+
+  // Strategy 3: Serverless Signed URL authorization upload
+  return uploadViaSignedUrl(file, mimeType, onProgress);
 }
 
 /**
- * Direct client upload fallback to Supabase Storage
+ * Executes an async upload function with automatic retry on transient failure
  */
-async function uploadDirectToSupabase(file, onProgress) {
-  if (onProgress) onProgress(30);
+async function uploadWithRetry(uploadFn, maxAttempts = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await uploadFn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts) {
+        // Wait 800ms before retrying transient mobile connection drop
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+    }
+  }
+  throw lastError;
+}
 
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const safeBaseName = file.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
-  const timestamp = Date.now();
-  const randomHex = Math.random().toString(36).substring(2, 9);
-  const storagePath = `photos/${timestamp}_${randomHex}_${safeBaseName}.${ext}`;
+/**
+ * Direct upload via Supabase Storage REST API using XMLHttpRequest for fine-grained progress
+ */
+function uploadDirectWithXhr(storagePath, file, mimeType, onProgress) {
+  return new Promise((resolve, reject) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const uploadEndpoint = `${supabaseUrl}/storage/v1/object/media/${storagePath}`;
 
-  if (onProgress) onProgress(50);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadEndpoint);
+    xhr.setRequestHeader('apikey', anonKey);
+    xhr.setRequestHeader('Authorization', `Bearer ${anonKey}`);
+    xhr.setRequestHeader('Content-Type', mimeType);
+    xhr.setRequestHeader('x-upsert', 'false');
 
-  const { data: uploadData, error: uploadError } = await supabase.storage
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        // Map upload progress into 10% - 85% range
+        const percent = 10 + Math.round((e.loaded / e.total) * 75);
+        onProgress(Math.min(85, percent));
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (onProgress) onProgress(90);
+
+        try {
+          const { data: publicUrlData } = supabase.storage
+            .from('media')
+            .getPublicUrl(storagePath);
+
+          const mediaRecord = {
+            file_path: publicUrlData.publicUrl,
+            file_name: file.name,
+            media_type: mimeType.startsWith('video/') ? 'video' : 'image',
+            mime_type: mimeType,
+            file_size: file.size,
+            contributor_name: 'Family',
+            caption: null
+          };
+
+          const { data: createdRecord, error: insertError } = await createMediaRecord(mediaRecord);
+          if (insertError) {
+            reject(new Error(`Failed to save photo details: ${insertError}`));
+            return;
+          }
+
+          if (onProgress) onProgress(100);
+          resolve(createdRecord);
+        } catch (dbErr) {
+          reject(dbErr);
+        }
+      } else {
+        try {
+          const errResponse = JSON.parse(xhr.responseText);
+          reject(new Error(errResponse.message || errResponse.error || `Upload failed (status ${xhr.status})`));
+        } catch {
+          reject(new Error(`Storage upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error during upload. Please check your internet connection.'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Upload timed out. Please try again.'));
+    };
+
+    xhr.send(file);
+  });
+}
+
+/**
+ * Direct upload using standard Supabase Storage JS Client
+ */
+async function uploadDirectViaSdk(storagePath, file, mimeType, onProgress) {
+  if (onProgress) onProgress(40);
+
+  const { error: uploadError } = await supabase.storage
     .from('media')
     .upload(storagePath, file, {
-      contentType: file.type || 'image/jpeg',
-      upsert: true
+      contentType: mimeType,
+      upsert: false
     });
 
   if (uploadError) {
@@ -113,8 +195,8 @@ async function uploadDirectToSupabase(file, onProgress) {
   const mediaRecord = {
     file_path: publicUrlData.publicUrl,
     file_name: file.name,
-    media_type: 'image',
-    mime_type: file.type || 'image/jpeg',
+    media_type: mimeType.startsWith('video/') ? 'video' : 'image',
+    mime_type: mimeType,
     file_size: file.size,
     contributor_name: 'Family',
     caption: null
@@ -130,16 +212,71 @@ async function uploadDirectToSupabase(file, onProgress) {
 }
 
 /**
- * Uploads file with XHR progress monitoring
+ * Serverless Signed URL authorization upload fallback
  */
-function uploadWithProgress(url, file, onPercent) {
+async function uploadViaSignedUrl(file, mimeType, onProgress) {
+  if (onProgress) onProgress(30);
+
+  const res = await fetch('/api/create-upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileName: file.name,
+      mimeType: mimeType,
+      fileSize: file.size
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Upload authorization failed (${res.status}): ${errText || res.statusText}`);
+  }
+
+  const { signedUrl, path, publicUrl } = await res.json();
+  if (!signedUrl) {
+    throw new Error('Server did not return a valid signed upload URL.');
+  }
+
+  if (onProgress) onProgress(50);
+
+  // Upload directly to signed storage URL
+  await uploadWithProgress(signedUrl, file, mimeType, (percent) => {
+    const mapped = 50 + Math.round(percent * 0.4);
+    if (onProgress) onProgress(mapped);
+  });
+
+  if (onProgress) onProgress(92);
+
+  const mediaRecord = {
+    file_path: publicUrl || path,
+    file_name: file.name,
+    media_type: mimeType.startsWith('video/') ? 'video' : 'image',
+    mime_type: mimeType,
+    file_size: file.size,
+    contributor_name: 'Family',
+    caption: null
+  };
+
+  const { data: createdRecord, error: insertError } = await createMediaRecord(mediaRecord);
+  if (insertError) {
+    throw new Error(`Failed to save photo details: ${insertError}`);
+  }
+
+  if (onProgress) onProgress(100);
+  return createdRecord;
+}
+
+/**
+ * Uploads file to signed URL with XHR progress monitoring
+ */
+function uploadWithProgress(url, file, mimeType, onPercent) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', url);
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.setRequestHeader('Content-Type', mimeType);
 
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
+      if (e.lengthComputable && onPercent) {
         const percent = Math.round((e.loaded / e.total) * 100);
         onPercent(percent);
       }
@@ -162,7 +299,7 @@ function uploadWithProgress(url, file, onPercent) {
 }
 
 /**
- * Creates a local demo record with object URL for immediate testing
+ * Creates a local demo record with object URL for preview mode
  */
 async function simulateDemoUpload(file, contributorName, caption, onProgress) {
   const steps = [20, 50, 75, 95, 100];
