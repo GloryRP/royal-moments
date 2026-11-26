@@ -4,7 +4,6 @@ import {
   Download, 
   MoreVertical, 
   Trash2,
-  MessageCircle,
   Check
 } from 'lucide-react';
 
@@ -102,16 +101,6 @@ export function PhotoCard({
     }
     if (e.target.closest('.action-button') || e.target.closest('.menu-container')) return;
     onOpenLightbox(item);
-  };
-
-  const handleWhatsAppShare = (e) => {
-    e.stopPropagation();
-    setMenuOpen(false);
-    const mediaUrl = item.url || item.file_path;
-    const text = encodeURIComponent(
-      `Look at this photo from Prabhudas & Soumya's Engagement Ceremony! 💍✨\n\nView here: ${mediaUrl}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   return (
@@ -219,14 +208,6 @@ export function PhotoCard({
                   className="absolute right-0 bottom-8 sm:bottom-9 w-44 bg-white rounded-xl shadow-2xl border border-gold-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button
-                    onClick={handleWhatsAppShare}
-                    className="w-full px-3.5 py-2 text-left text-xs font-sans text-royal-espresso hover:bg-gold-50 flex items-center gap-2 transition"
-                  >
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span>Share to WhatsApp</span>
-                  </button>
-
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

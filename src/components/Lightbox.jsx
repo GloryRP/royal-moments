@@ -10,7 +10,6 @@ import {
   ZoomIn, 
   ZoomOut, 
   RotateCcw, 
-  MessageCircle, 
   MoreVertical, 
   Trash2, 
   Play, 
@@ -255,17 +254,6 @@ export function Lightbox({
     isDragging.current = false;
   };
 
-  // Direct WhatsApp share
-  const handleWhatsAppShare = () => {
-    if (!currentItem) return;
-    setMenuOpen(false);
-    const mediaUrl = currentItem.url || currentItem.file_path;
-    const text = encodeURIComponent(
-      `Check out this beautiful photo from Prabhudas & Soumya's Engagement Ceremony! 💍✨\n\n"${currentItem.caption || currentItem.file_name}"\n\nView memory here: ${mediaUrl}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-  };
-
   if (!isOpen || !currentItem) return null;
 
   const isVideo = currentItem.media_type === 'video';
@@ -321,16 +309,6 @@ export function Lightbox({
                 </span>
               </button>
             )}
-
-            {/* Direct WhatsApp Share Button */}
-            <button
-              onClick={handleWhatsAppShare}
-              className="p-1.5 sm:p-2.5 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-white transition-all shadow-md flex items-center gap-1"
-              title="Share on WhatsApp"
-            >
-              <MessageCircle className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
-              <span className="hidden sm:inline text-xs font-semibold">Share</span>
-            </button>
 
             {/* Reset Zoom Pill (Visible on mobile & desktop when zoomed in) */}
             {!isVideo && zoomScale > 1 && (
@@ -415,14 +393,6 @@ export function Lightbox({
 
               {menuOpen && (
                 <div className="absolute right-0 top-11 w-48 bg-royal-card rounded-xl shadow-2xl border border-gold-300 py-2 z-40 text-royal-espresso">
-                  <button
-                    onClick={handleWhatsAppShare}
-                    className="w-full px-4 py-2 text-left text-xs font-sans hover:bg-gold-50 flex items-center gap-2 transition"
-                  >
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span>Share on WhatsApp</span>
-                  </button>
-
                   <button
                     onClick={() => {
                       setMenuOpen(false);
