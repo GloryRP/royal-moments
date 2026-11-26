@@ -40,8 +40,8 @@ export function Gallery({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
-  const [mobileCols, setMobileCols] = useState(2); // 2 or 3 columns on mobile
-  const [screenSize, setScreenSize] = useState('desktop');
+  const [mobileCols, setMobileCols] = useState(2); // Default to 2 columns on mobile for perfect 2x2 symmetry
+  const [screenSize, setScreenSize] = useState('mobile');
 
   // Track window size for responsive grid columns
   useEffect(() => {
@@ -135,7 +135,7 @@ export function Gallery({
 
   return (
     <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28 w-full">
-      <div className="w-full max-w-[1560px] mx-auto px-1.5 sm:px-3 md:px-4">
+      <div className="w-full max-w-[1560px] mx-auto px-1 sm:px-3 md:px-4">
         {/* Section Title Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 px-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-800 text-xs font-cinzel font-semibold tracking-widest uppercase mb-3">
@@ -151,7 +151,7 @@ export function Gallery({
         </div>
 
         {/* Filter and Sort Toolbar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6 sm:mb-8 pb-3 border-b border-gold-200/60 w-full">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6 sm:mb-8 pb-3 border-b border-gold-200/60 w-full px-1">
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
@@ -265,13 +265,13 @@ export function Gallery({
           </div>
         </div>
 
-        {/* Loading Skeleton */}
+        {/* Loading Skeleton: Tight Hairline Zero Gap */}
         {isLoading && (
-          <div className={`w-full grid ${gridColsClass} gap-[2px] sm:gap-1`}>
-            {[...Array(8)].map((_, i) => (
+          <div className={`w-full grid ${gridColsClass} gap-[1.5px] sm:gap-[2px]`}>
+            {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="w-full aspect-[4/5] bg-royal-sand/40 rounded-[2px] animate-pulse"
+                className="w-full aspect-[4/5] bg-royal-sand/40 animate-pulse"
               />
             ))}
           </div>
@@ -311,25 +311,37 @@ export function Gallery({
           </div>
         )}
 
-        {/* Populated Gallery: Google Photos Style 100% Full-Width Hairline Grid (Zero Extra Space on Right) */}
+        {/* Populated Gallery: Google Photos Style 100% Full-Width Hairline Grid (ZERO GAP between photos & ZERO GAP on right side) */}
         {!isLoading && items.length > 0 && (
-          <div className={`w-full grid ${gridColsClass} gap-[2px] sm:gap-1 items-start`}>
-            {items.map((item) => (
-              <PhotoCard
-                key={item.id}
-                item={item}
-                isFavourited={isFavourited(item.id)}
-                favouriteCount={getFavouriteCount(item.id)}
-                onToggleFavourite={onToggleFavourite}
-                onOpenLightbox={onOpenLightbox}
-                onDownload={onDownload}
-                onRequestDelete={onRequestDelete}
-                isSelectMode={isSelectMode}
-                isSelected={selectedIds.has(item.id)}
-                onToggleSelect={handleToggleSelect}
-                onLongPress={handleLongPress}
-              />
-            ))}
+          <div className={`w-full grid ${gridColsClass} gap-[1.5px] sm:gap-[2px] items-start`}>
+            {items.map((item, index) => {
+              // When in 2-column mode with an odd total number of photos, make the last photo span full width (col-span-2) so there is never an empty hole on the right!
+              const isLastOddInTwoCols = (screenSize === 'mobile' && mobileCols === 2 || screenSize === 'tablet') && 
+                items.length % 2 !== 0 && 
+                index === items.length - 1;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`w-full ${isLastOddInTwoCols ? 'col-span-2' : ''}`}
+                >
+                  <PhotoCard
+                    item={item}
+                    isFavourited={isFavourited(item.id)}
+                    favouriteCount={getFavouriteCount(item.id)}
+                    onToggleFavourite={onToggleFavourite}
+                    onOpenLightbox={onOpenLightbox}
+                    onDownload={onDownload}
+                    onRequestDelete={onRequestDelete}
+                    isSelectMode={isSelectMode}
+                    isSelected={selectedIds.has(item.id)}
+                    onToggleSelect={handleToggleSelect}
+                    onLongPress={handleLongPress}
+                    className={isLastOddInTwoCols ? '!aspect-[16/9]' : ''}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

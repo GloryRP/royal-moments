@@ -19,7 +19,8 @@ export function PhotoCard({
   isSelectMode,
   isSelected,
   onToggleSelect,
-  onLongPress
+  onLongPress,
+  className = ''
 }) {
   const [hasError, setHasError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -123,24 +124,24 @@ export function PhotoCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`group relative cursor-pointer overflow-hidden rounded-[2px] sm:rounded-sm bg-royal-sand/15 transition-all select-none w-full ${
+      className={`group relative cursor-pointer overflow-hidden bg-royal-sand/30 select-none w-full aspect-[4/5] ${
         isSelected
-          ? 'ring-2 sm:ring-4 ring-gold-500 shadow-md scale-[0.98]'
+          ? 'ring-2 sm:ring-3 ring-gold-500 shadow-md scale-[0.98]'
           : 'hover:opacity-95'
-      }`}
+      } ${className}`}
     >
-      {/* 100% Uncropped natural photo - full length, width, and environment */}
+      {/* Seamless edge-to-edge photo with zero vertical gaps */}
       <img
         src={item.url || item.file_path}
         alt={item.file_name}
-        className="w-full h-auto block select-none"
+        className="w-full h-full object-cover object-center select-none"
         onError={() => setHasError(true)}
         loading="lazy"
       />
 
       {/* Fallback broken image indicator */}
       {hasError && (
-        <div className="w-full aspect-[4/3] flex flex-col items-center justify-center bg-royal-sand/40 text-royal-espresso/60 p-2 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-royal-sand/40 text-royal-espresso/60 p-2 text-center">
           <span className="text-xl mb-1">🖼️</span>
           <span className="text-[10px] font-sans">Unable to load</span>
         </div>

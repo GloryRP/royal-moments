@@ -482,17 +482,24 @@ export function Lightbox({
                 className="max-h-[76vh] max-w-[90vw] sm:max-w-[80vw] rounded-lg shadow-2xl object-contain bg-black"
               />
             ) : (
-              <img
-                src={currentItem.url || currentItem.file_path}
-                alt={currentItem.file_name}
-                className="max-h-[76vh] max-w-[94vw] sm:max-w-[88vw] object-contain rounded-xl shadow-2xl select-none"
-                style={{
-                  transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0px) scale(${zoomScale})`,
-                  cursor: zoomScale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'zoom-in',
-                  touchAction: 'none'
-                }}
-                draggable={false}
-              />
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentItem.id || currentIndex}
+                  src={currentItem.url || currentItem.file_path}
+                  alt={currentItem.file_name}
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                  className="max-h-[76vh] max-w-[94vw] sm:max-w-[88vw] object-contain rounded-xl shadow-2xl select-none"
+                  style={{
+                    transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0px) scale(${zoomScale})`,
+                    cursor: zoomScale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'zoom-in',
+                    touchAction: 'none'
+                  }}
+                  draggable={false}
+                />
+              </AnimatePresence>
             )}
           </div>
         </div>
