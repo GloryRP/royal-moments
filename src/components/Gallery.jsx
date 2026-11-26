@@ -291,7 +291,7 @@ export function Gallery({
             <p className="font-sans text-sm text-royal-espresso/60 max-w-md mx-auto mb-6">
               {filter === 'favourites'
                 ? siteConfig.favourites.emptyMessage
-                : 'Be the first family member to upload a photo from Prabhudas & Somya’s engagement!'}
+                : 'Be the first family member to upload a photo from Prabhudas & Soumya’s engagement!'}
             </p>
             {filter === 'favourites' ? (
               <button

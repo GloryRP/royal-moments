@@ -261,7 +261,7 @@ export function Lightbox({
     setMenuOpen(false);
     const mediaUrl = currentItem.url || currentItem.file_path;
     const text = encodeURIComponent(
-      `Check out this beautiful photo from Prabhudas & Somya's Engagement Ceremony! 💍✨\n\n"${currentItem.caption || currentItem.file_name}"\n\nView memory here: ${mediaUrl}`
+      `Check out this beautiful photo from Prabhudas & Soumya's Engagement Ceremony! 💍✨\n\n"${currentItem.caption || currentItem.file_name}"\n\nView memory here: ${mediaUrl}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };

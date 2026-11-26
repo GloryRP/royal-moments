@@ -109,7 +109,7 @@ export function PhotoCard({
     setMenuOpen(false);
     const mediaUrl = item.url || item.file_path;
     const text = encodeURIComponent(
-      `Look at this photo from Prabhudas & Somya's Engagement Ceremony! 💍✨\n\nView here: ${mediaUrl}`
+      `Look at this photo from Prabhudas & Soumya's Engagement Ceremony! 💍✨\n\nView here: ${mediaUrl}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };

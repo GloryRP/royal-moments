@@ -6,7 +6,7 @@ export const siteConfig = {
   // Couple Information
   couple: {
     partnerOne: "Prabhudas",
-    partnerTwo: "Somya",
+    partnerTwo: "Soumya",
     get fullName() {
       return `${this.partnerOne} & ${this.partnerTwo}`;
     },
@@ -22,7 +22,7 @@ export const siteConfig = {
     secondaryCta: "Upload Photos",
     // Real couple engagement photograph (complete hands, garland & rings)
     coverImage: "/couple-cover.jpg",
-    coverImageAlt: "Prabhudas & Somya Engagement Hands with Garland & Ring",
+    coverImageAlt: "Prabhudas & Soumya Engagement Hands with Garland & Ring",
   },
 
   // Gallery Configuration
@@ -56,6 +56,6 @@ export const siteConfig = {
   // Footer & Brand
   footer: {
     quote: "Made with love, shared with family.",
-    copyrightNotice: "All rights reserved. Dedicated to the celebration of Prabhudas & Somya.",
+    copyrightNotice: "All rights reserved. Dedicated to the celebration of Prabhudas & Soumya.",
   }
 };
