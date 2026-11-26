@@ -56,6 +56,21 @@ export function Gallery({
     });
   };
 
+  // Long-press activates select mode and adds target photo immediately
+  const handleLongPress = (id) => {
+    setIsSelectMode(true);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    toast.success('Select mode active — tap photos to choose', {
+      id: 'select-mode-toast',
+      icon: '☑️',
+      duration: 2500
+    });
+  };
+
   const handleSelectAll = () => {
     if (selectedIds.size === items.length) {
       setSelectedIds(new Set());
@@ -189,15 +204,15 @@ export function Gallery({
           </div>
         </div>
 
-        {/* Gallery Grid State: Loading Skeleton */}
+        {/* Gallery Grid State: Loading Skeleton (Google Photos multi-column layout) */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
             {[...Array(8)].map((_, i) => (
               <div
                 key={i}
                 className="rounded-xl overflow-hidden bg-white border border-gold-100 shadow-sm animate-pulse"
               >
-                <div className="aspect-[4/5] bg-royal-sand/50" />
+                <div className="aspect-square sm:aspect-[4/5] bg-royal-sand/50" />
               </div>
             ))}
           </div>
@@ -237,9 +252,9 @@ export function Gallery({
           </div>
         )}
 
-        {/* Gallery Grid: Populated Items */}
+        {/* Gallery Grid: Populated Items (Google Photos 2-column mobile layout) */}
         {!isLoading && items.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
             {items.map((item) => (
               <PhotoCard
                 key={item.id}
@@ -253,6 +268,7 @@ export function Gallery({
                 isSelectMode={isSelectMode}
                 isSelected={selectedIds.has(item.id)}
                 onToggleSelect={handleToggleSelect}
+                onLongPress={handleLongPress}
               />
             ))}
           </div>

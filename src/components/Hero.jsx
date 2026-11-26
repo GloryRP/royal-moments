@@ -172,7 +172,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
       id="hero"
       className={`relative flex items-center justify-center transition-all duration-500 ${
         !isOpen
-          ? 'min-h-screen h-screen overflow-hidden'
+          ? 'min-h-[100dvh] h-[100dvh] w-full overflow-hidden py-4 px-3'
           : 'min-h-[calc(100vh-64px)] pt-14 pb-8 sm:pt-16 sm:pb-12'
       }`}
     >
@@ -181,7 +181,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gold-200/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* ──────────────────────────────────────────────────────────────────────────
-          STATE 1: COMPACT CLOSED ROYAL ENVELOPE (Directly transitions on click)
+          STATE 1: COMPACT CLOSED ROYAL ENVELOPE (Fills mobile screen perfectly)
           ────────────────────────────────────────────────────────────────────────── */}
       {!isOpen ? (
         <motion.div
@@ -190,7 +190,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.4 }}
-          className="relative z-20 max-w-sm w-full mx-auto px-4 text-center flex flex-col items-center justify-center my-auto"
+          className="relative z-20 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] mx-auto px-2 xs:px-4 text-center flex flex-col items-center justify-center my-auto"
         >
           {/* Header Badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-gold-300/70 bg-white/80 backdrop-blur-md mb-2 shadow-sm">
@@ -202,7 +202,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
           </div>
 
           {/* Couple Names */}
-          <h2 className="font-serif text-2xl sm:text-3xl text-royal-espresso mb-1 tracking-tight">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-royal-espresso mb-1 tracking-tight">
             Prabhudas &amp; Somya
           </h2>
 
@@ -210,32 +210,32 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
             Engagement Ceremony • November 22
           </p>
 
-          {/* Clickable Envelope Container */}
+          {/* Clickable Envelope Container - Fits Mobile Screen Magnificently */}
           <div
             onClick={handleOpenEnvelope}
-            className="group relative cursor-pointer mx-auto max-w-[210px] sm:max-w-[250px] transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
+            className="group relative cursor-pointer mx-auto w-full max-w-[290px] xs:max-w-[330px] sm:max-w-[380px] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
             title="Click to open invitation directly"
           >
             {/* Subtle Gold Ambient Glow */}
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-gold-300/30 via-gold-400/40 to-gold-300/30 rounded-xl blur-md group-hover:blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300" />
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-gold-300/30 via-gold-400/40 to-gold-300/30 rounded-2xl blur-md group-hover:blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300" />
 
             {/* Envelope Image */}
-            <div className="relative rounded-lg overflow-hidden shadow-xl border border-gold-300/60 bg-[#8B9E82]">
+            <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gold-300/70 bg-[#8B9E82]">
               <img
                 src="/envelope-closed.jpg"
                 alt="Royal Engagement Invitation Envelope"
-                className="w-full h-auto max-h-[38vh] sm:max-h-[42vh] object-cover transform transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto max-h-[48vh] sm:max-h-[52vh] object-cover transform transition-transform duration-500 group-hover:scale-105"
               />
 
               {/* Shimmering pulse over the wax seal */}
               <div className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-gold-300 animate-ping opacity-35" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-gold-300 animate-ping opacity-40" />
               </div>
             </div>
 
             {/* "Tap to Open" Callout Button */}
-            <div className="mt-3.5 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-gold-500 via-gold-600 to-gold-500 text-white text-[11px] font-sans font-semibold uppercase tracking-[0.18em] shadow-royal hover:shadow-royal-lg transition-all">
-              <Sparkles className="w-3 h-3" />
+            <div className="mt-3.5 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-gold-500 via-gold-600 to-gold-500 text-white text-xs font-sans font-semibold uppercase tracking-[0.2em] shadow-royal hover:shadow-royal-lg transition-all">
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Tap to Open</span>
             </div>
           </div>

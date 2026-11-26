@@ -38,6 +38,10 @@ export function Lightbox({
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [initialPinchDist, setInitialPinchDist] = useState(null);
+  
+  const isDragging = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const panStartPos = useRef({ x: 0, y: 0 });
 
   // Sync current index when selected item changes
   useEffect(() => {
@@ -52,6 +56,7 @@ export function Lightbox({
     setZoomScale(1);
     setPanPosition({ x: 0, y: 0 });
     setMenuOpen(false);
+    isDragging.current = false;
   }, [currentIndex, isOpen]);
 
   const currentItem = items[currentIndex] || item;
@@ -89,7 +94,7 @@ export function Lightbox({
     };
   }, [isOpen, onClose, handleNext, handlePrev]);
 
-  // Touch handlers for Swipe and Pinch-to-zoom
+  // Touch handlers for Swipe and Pinch-to-zoom + Multi-directional Pan
   const onTouchStart = (e) => {
     if (e.touches.length === 2) {
       // Pinch gesture start
@@ -98,9 +103,17 @@ export function Lightbox({
         e.touches[0].clientY - e.touches[1].clientY
       );
       setInitialPinchDist(dist);
-    } else if (e.touches.length === 1 && zoomScale === 1) {
-      setTouchEnd(null);
-      setTouchStart(e.targetTouches[0].clientX);
+    } else if (e.touches.length === 1) {
+      if (zoomScale > 1) {
+        // 1 finger while zoomed in: Pan to any part of the photo
+        isDragging.current = true;
+        dragStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        panStartPos.current = { ...panPosition };
+      } else {
+        // 1 finger while unzoomed: Swipe between photos
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+      }
     }
   };
 
@@ -112,14 +125,29 @@ export function Lightbox({
         e.touches[0].clientY - e.touches[1].clientY
       );
       const ratio = dist / initialPinchDist;
-      setZoomScale((prev) => Math.min(3, Math.max(1, prev * (ratio > 1 ? 1.03 : 0.97))));
-    } else if (e.touches.length === 1 && zoomScale === 1) {
-      setTouchEnd(e.targetTouches[0].clientX);
+      setZoomScale((prev) => {
+        const next = Math.min(4, Math.max(1, prev * (ratio > 1 ? 1.04 : 0.96)));
+        if (next === 1) setPanPosition({ x: 0, y: 0 });
+        return next;
+      });
+    } else if (e.touches.length === 1) {
+      if (zoomScale > 1 && isDragging.current) {
+        // Pan freely across any corner, face, or detail
+        const deltaX = e.touches[0].clientX - dragStartPos.current.x;
+        const deltaY = e.touches[0].clientY - dragStartPos.current.y;
+        setPanPosition({
+          x: panStartPos.current.x + deltaX,
+          y: panStartPos.current.y + deltaY
+        });
+      } else if (zoomScale === 1) {
+        setTouchEnd(e.targetTouches[0].clientX);
+      }
     }
   };
 
   const onTouchEnd = () => {
     setInitialPinchDist(null);
+    isDragging.current = false;
     if (zoomScale > 1) return; // Don't swipe while zoomed in
 
     if (!touchStart || !touchEnd) return;
@@ -131,10 +159,46 @@ export function Lightbox({
     }
   };
 
-  // Double-tap or double-click to toggle zoom (1x <-> 2x)
-  const handleDoubleTap = () => {
-    setZoomScale((prev) => (prev > 1 ? 1 : 2));
-    setPanPosition({ x: 0, y: 0 });
+  // Mouse Drag handlers for Desktop
+  const handleMouseDown = (e) => {
+    if (zoomScale > 1 && e.button === 0) {
+      isDragging.current = true;
+      dragStartPos.current = { x: e.clientX, y: e.clientY };
+      panStartPos.current = { ...panPosition };
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (zoomScale > 1 && isDragging.current) {
+      const deltaX = e.clientX - dragStartPos.current.x;
+      const deltaY = e.clientY - dragStartPos.current.y;
+      setPanPosition({
+        x: panStartPos.current.x + deltaX,
+        y: panStartPos.current.y + deltaY
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  // Double-tap or double-click to toggle zoom & target tapped location
+  const handleDoubleTap = (e) => {
+    if (zoomScale > 1) {
+      setZoomScale(1);
+      setPanPosition({ x: 0, y: 0 });
+    } else {
+      setZoomScale(2.5);
+      if (e?.clientX && e?.clientY) {
+        const midX = window.innerWidth / 2;
+        const midY = window.innerHeight / 2;
+        setPanPosition({
+          x: (midX - e.clientX) * 1.2,
+          y: (midY - e.clientY) * 1.2
+        });
+      }
+    }
   };
 
   // Direct WhatsApp share
@@ -179,11 +243,30 @@ export function Lightbox({
               <span className="hidden sm:inline text-xs font-semibold">Share</span>
             </button>
 
+            {/* Reset Zoom Pill (Visible on mobile & desktop when zoomed in) */}
+            {!isVideo && zoomScale > 1 && (
+              <button
+                onClick={() => {
+                  setZoomScale(1);
+                  setPanPosition({ x: 0, y: 0 });
+                }}
+                className="px-2.5 py-1.5 rounded-full bg-gold-600/90 hover:bg-gold-500 text-white text-[11px] font-sans font-medium flex items-center gap-1 shadow-md transition"
+                title="Reset zoom to 100%"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
+
             {/* Zoom Controls (Images only) */}
             {!isVideo && (
               <div className="hidden sm:flex items-center gap-1 bg-white/10 rounded-full p-1 border border-white/10">
                 <button
-                  onClick={() => setZoomScale((z) => Math.max(1, z - 0.5))}
+                  onClick={() => setZoomScale((z) => {
+                    const next = Math.max(1, z - 0.5);
+                    if (next === 1) setPanPosition({ x: 0, y: 0 });
+                    return next;
+                  })}
                   disabled={zoomScale <= 1}
                   className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
                   title="Zoom Out"
@@ -194,8 +277,8 @@ export function Lightbox({
                   {Math.round(zoomScale * 100)}%
                 </span>
                 <button
-                  onClick={() => setZoomScale((z) => Math.min(3, z + 0.5))}
-                  disabled={zoomScale >= 3}
+                  onClick={() => setZoomScale((z) => Math.min(4, z + 0.5))}
+                  disabled={zoomScale >= 4}
                   className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
                   title="Zoom In"
                 >
@@ -298,35 +381,38 @@ export function Lightbox({
           </button>
         )}
 
-        {/* Main Content Area with Pinch/Double-tap Zoom */}
+        {/* Main Content Area with Pinch/Double-tap Zoom & Free Multi-directional Pan */}
         <div 
-          className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-10 pb-20 sm:pb-24 overflow-hidden"
+          className="relative w-full h-full flex flex-col items-center justify-center p-2 sm:p-6 pb-16 sm:pb-20 overflow-hidden cursor-default"
           onDoubleClick={!isVideo ? handleDoubleTap : undefined}
+          onMouseDown={!isVideo ? handleMouseDown : undefined}
+          onMouseMove={!isVideo ? handleMouseMove : undefined}
+          onMouseUp={!isVideo ? handleMouseUp : undefined}
+          onMouseLeave={!isVideo ? handleMouseUp : undefined}
         >
-          <motion.div
-            key={currentItem.id}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: zoomScale }}
-            transition={{ duration: 0.2 }}
-            className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden cursor-zoom-in"
-          >
+          <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
             {isVideo ? (
               <video
                 src={currentItem.url || currentItem.file_path}
                 controls
                 autoPlay
                 playsInline
-                className="max-h-[72vh] max-w-[90vw] sm:max-w-[80vw] rounded-lg shadow-2xl object-contain bg-black"
+                className="max-h-[76vh] max-w-[90vw] sm:max-w-[80vw] rounded-lg shadow-2xl object-contain bg-black"
               />
             ) : (
               <img
                 src={currentItem.url || currentItem.file_path}
-                alt={currentItem.caption || currentItem.file_name}
-                className="max-h-[72vh] max-w-[92vw] sm:max-w-[85vw] object-contain rounded-lg shadow-2xl select-none transition-transform duration-200"
-                style={{ transform: `scale(${zoomScale})` }}
+                alt={currentItem.file_name}
+                className="max-h-[76vh] max-w-[94vw] sm:max-w-[88vw] object-contain rounded-xl shadow-2xl select-none"
+                style={{
+                  transform: `translate3d(${panPosition.x}px, ${panPosition.y}px, 0px) scale(${zoomScale})`,
+                  cursor: zoomScale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'zoom-in',
+                  touchAction: 'none'
+                }}
+                draggable={false}
               />
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Next Button (Desktop) */}
