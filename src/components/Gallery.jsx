@@ -41,9 +41,9 @@ export function Gallery({
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [mobileCols, setMobileCols] = useState(2); // 2 or 3 columns on mobile
-  const [screenSize, setScreenSize] = useState('mobile');
+  const [screenSize, setScreenSize] = useState('desktop');
 
-  // Track window size for responsive masonry column count
+  // Track window size for responsive grid columns
   useEffect(() => {
     const handleResize = () => {
       if (typeof window === 'undefined') return;
@@ -60,13 +60,11 @@ export function Gallery({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const activeCols = screenSize === 'desktop' ? 4 : screenSize === 'tablet' ? 3 : mobileCols;
-
-  // Distribute items round-robin across columns to maintain left-to-right, top-to-bottom chronological order
-  const columns = Array.from({ length: activeCols }, () => []);
-  items.forEach((item, index) => {
-    columns[index % activeCols].push(item);
-  });
+  const gridColsClass = screenSize === 'mobile'
+    ? (mobileCols === 3 ? 'grid-cols-3' : 'grid-cols-2')
+    : screenSize === 'tablet'
+    ? 'grid-cols-3'
+    : 'grid-cols-4';
 
   const scrollToUpload = () => {
     const el = document.getElementById('upload');
@@ -136,8 +134,8 @@ export function Gallery({
   };
 
   return (
-    <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28">
-      <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8">
+    <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28 w-full">
+      <div className="w-full max-w-[1560px] mx-auto px-1.5 sm:px-3 md:px-4">
         {/* Section Title Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 px-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-800 text-xs font-cinzel font-semibold tracking-widest uppercase mb-3">
@@ -153,7 +151,7 @@ export function Gallery({
         </div>
 
         {/* Filter and Sort Toolbar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6 sm:mb-8 pb-3 border-b border-gold-200/60 px-2 sm:px-0">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6 sm:mb-8 pb-3 border-b border-gold-200/60 w-full">
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <button
@@ -267,20 +265,14 @@ export function Gallery({
           </div>
         </div>
 
-        {/* Loading Skeleton with matching tight hairline columns */}
+        {/* Loading Skeleton */}
         {isLoading && (
-          <div className="flex gap-[2px] sm:gap-1 items-start">
-            {[...Array(activeCols)].map((_, colIdx) => (
-              <div key={colIdx} className="flex-1 flex flex-col gap-[2px] sm:gap-1">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-full bg-royal-sand/40 rounded-[2px] animate-pulse ${
-                      (i + colIdx) % 2 === 0 ? 'aspect-[3/4]' : 'aspect-square'
-                    }`}
-                  />
-                ))}
-              </div>
+          <div className={`w-full grid ${gridColsClass} gap-[2px] sm:gap-1`}>
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="w-full aspect-[4/5] bg-royal-sand/40 rounded-[2px] animate-pulse"
+              />
             ))}
           </div>
         )}
@@ -319,28 +311,24 @@ export function Gallery({
           </div>
         )}
 
-        {/* Populated Gallery: Google Photos Style Tight Hairline Mosaic Grid (Zero Cropping) */}
+        {/* Populated Gallery: Google Photos Style 100% Full-Width Hairline Grid (Zero Extra Space on Right) */}
         {!isLoading && items.length > 0 && (
-          <div className="flex gap-[2px] sm:gap-1 md:gap-1.5 items-start justify-center">
-            {columns.map((colItems, colIdx) => (
-              <div key={colIdx} className="flex-1 flex flex-col gap-[2px] sm:gap-1 md:gap-1.5 min-w-0">
-                {colItems.map((item) => (
-                  <PhotoCard
-                    key={item.id}
-                    item={item}
-                    isFavourited={isFavourited(item.id)}
-                    favouriteCount={getFavouriteCount(item.id)}
-                    onToggleFavourite={onToggleFavourite}
-                    onOpenLightbox={onOpenLightbox}
-                    onDownload={onDownload}
-                    onRequestDelete={onRequestDelete}
-                    isSelectMode={isSelectMode}
-                    isSelected={selectedIds.has(item.id)}
-                    onToggleSelect={handleToggleSelect}
-                    onLongPress={handleLongPress}
-                  />
-                ))}
-              </div>
+          <div className={`w-full grid ${gridColsClass} gap-[2px] sm:gap-1 items-start`}>
+            {items.map((item) => (
+              <PhotoCard
+                key={item.id}
+                item={item}
+                isFavourited={isFavourited(item.id)}
+                favouriteCount={getFavouriteCount(item.id)}
+                onToggleFavourite={onToggleFavourite}
+                onOpenLightbox={onOpenLightbox}
+                onDownload={onDownload}
+                onRequestDelete={onRequestDelete}
+                isSelectMode={isSelectMode}
+                isSelected={selectedIds.has(item.id)}
+                onToggleSelect={handleToggleSelect}
+                onLongPress={handleLongPress}
+              />
             ))}
           </div>
         )}

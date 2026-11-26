@@ -21,7 +21,6 @@ export function PhotoCard({
   onToggleSelect,
   onLongPress
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -124,32 +123,18 @@ export function PhotoCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`group relative cursor-pointer overflow-hidden rounded-[2px] sm:rounded-sm bg-royal-sand/20 transition-all select-none ${
+      className={`group relative cursor-pointer overflow-hidden rounded-[2px] sm:rounded-sm bg-royal-sand/15 transition-all select-none w-full ${
         isSelected
           ? 'ring-2 sm:ring-4 ring-gold-500 shadow-md scale-[0.98]'
           : 'hover:opacity-95'
       }`}
     >
-      {/* Skeleton overlay that fades out once loaded */}
-      {!imageLoaded && !hasError && (
-        <div className="absolute inset-0 bg-royal-sand/40 animate-pulse pointer-events-none z-10" />
-      )}
-
-      {/* Natural uncropped photo - original length, width, and surrounding environment with zero cropping */}
+      {/* 100% Uncropped natural photo - full length, width, and environment */}
       <img
-        ref={(el) => {
-          if (el && el.complete && !imageLoaded) {
-            setImageLoaded(true);
-          }
-        }}
         src={item.url || item.file_path}
         alt={item.file_name}
         className="w-full h-auto block select-none"
-        onLoad={() => setImageLoaded(true)}
-        onError={() => {
-          setImageLoaded(true);
-          setHasError(true);
-        }}
+        onError={() => setHasError(true)}
         loading="lazy"
       />
 
