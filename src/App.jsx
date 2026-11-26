@@ -9,6 +9,7 @@ import { DownloadModal } from './components/DownloadModal';
 import { DeleteModal } from './components/DeleteModal';
 import { Footer } from './components/Footer';
 import { DemoNotice } from './components/DemoNotice';
+import { BackgroundMusic } from './components/BackgroundMusic';
 import { useFavourites } from './hooks/useFavourites';
 import { useGallery } from './hooks/useGallery';
 import { downloadIndividualFile } from './services/downloadService';
@@ -234,6 +235,8 @@ export function App() {
         }}
         onConfirmDelete={handleConfirmDelete}
       />
+      {/* Continuous Looping Background Music */}
+      <BackgroundMusic isEnvelopeOpen={isEnvelopeOpen} />
     </div>
   );
 }

@@ -83,3 +83,12 @@
 .animate-pulse-gold {
   animation: pulseGold 3s infinite;
 }
+
+@keyframes musicBar {
+  0%, 100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
