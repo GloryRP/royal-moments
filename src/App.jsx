@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
