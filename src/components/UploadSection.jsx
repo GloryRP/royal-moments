@@ -168,7 +168,7 @@ export function UploadSection({ onUploadSuccess }) {
   };
 
   return (
-    <section id="upload" className="py-16 sm:py-20 relative bg-royal-cream/60">
+    <section id="upload" className="py-16 sm:py-20 relative bg-royal-cream/60 w-full max-w-full overflow-hidden">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-8">

@@ -153,7 +153,7 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-royal-ivory text-royal-espresso flex flex-col font-sans selection:bg-gold-200 ${!isEnvelopeOpen ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden bg-royal-ivory text-royal-espresso flex flex-col font-sans selection:bg-gold-200 ${!isEnvelopeOpen ? 'h-screen overflow-hidden' : ''}`}>
       {/* Toast Notification Provider */}
       <Toaster
         position="bottom-right"

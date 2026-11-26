@@ -134,8 +134,8 @@ export function Gallery({
   };
 
   return (
-    <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28 w-full">
-      <div className="w-full max-w-[1560px] mx-auto px-1 sm:px-3 md:px-4">
+    <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28 w-full max-w-full overflow-hidden">
+      <div className="w-full max-w-full mx-auto px-1 sm:px-3 md:px-4">
         {/* Section Title Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 px-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-800 text-xs font-cinzel font-semibold tracking-widest uppercase mb-3">

@@ -179,9 +179,9 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
   return (
     <section
       id="hero"
-      className={`relative flex items-center justify-center transition-all duration-700 ${
+      className={`relative flex items-center justify-center transition-all duration-700 w-full max-w-full overflow-hidden ${
         !isOpen
-          ? 'min-h-[100dvh] h-[100dvh] w-full overflow-hidden py-4 px-3'
+          ? 'min-h-[100dvh] h-[100dvh] py-4 px-3'
           : 'min-h-[calc(100vh-64px)] pt-14 pb-8 sm:pt-16 sm:pb-12'
       }`}
     >
