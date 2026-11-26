@@ -143,18 +143,25 @@ export function FlyingButterfly({ style = {}, className = '', scale = 1 }) {
    ══════════════════════════════════════════════════════════════════════════════ */
 export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
-  // Directly open immediately on click - no delay, perfectly centered
+  // Animated opening sequence with flying butterfly
   const handleOpenEnvelope = () => {
-    if (onOpen) {
-      onOpen();
-    } else {
-      setInternalIsOpen(true);
-    }
+    if (isOpening || isOpen) return;
+    setIsOpening(true);
+    setTimeout(() => {
+      setIsOpening(false);
+      if (onOpen) {
+        onOpen();
+      } else {
+        setInternalIsOpen(true);
+      }
+    }, 700);
   };
 
   const handleReclose = () => {
+    setIsOpening(false);
     if (onClose) {
       onClose();
     } else {
@@ -181,40 +188,36 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gold-200/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* ──────────────────────────────────────────────────────────────────────────
-          STATE 1: COMPACT CLOSED ROYAL ENVELOPE (Fills mobile screen perfectly)
+          STATE 1: CLEAN MINIMAL ENVELOPE GATE (No text above, fits mobile screen)
           ────────────────────────────────────────────────────────────────────────── */}
       {!isOpen ? (
         <motion.div
           key="sealed-envelope-view"
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
+          exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.4 }}
-          className="relative z-20 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] mx-auto px-2 xs:px-4 text-center flex flex-col items-center justify-center my-auto"
+          className="relative z-20 w-full max-w-[340px] xs:max-w-[380px] sm:max-w-[440px] mx-auto px-2 text-center flex flex-col items-center justify-center my-auto"
         >
-          {/* Header Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-gold-300/70 bg-white/80 backdrop-blur-md mb-2 shadow-sm">
-            <Sparkles className="w-3 h-3 text-gold-600" />
-            <span className="font-cinzel text-[10px] sm:text-xs uppercase tracking-[0.22em] text-gold-900 font-semibold">
-              Wedding Invitation
-            </span>
-            <Sparkles className="w-3 h-3 text-gold-600" />
-          </div>
+          {/* Animated Ascending Butterfly when Tap to Open is clicked */}
+          {isOpening && (
+            <motion.div
+              initial={{ opacity: 0, y: 0, scale: 0.6 }}
+              animate={{ opacity: [0, 1, 1, 0], y: [0, -120, -260], scale: [0.6, 1.15, 0.9] }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+              className="absolute z-30 pointer-events-none"
+            >
+              <FlyingButterfly scale={1} />
+            </motion.div>
+          )}
 
-          {/* Couple Names */}
-          <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-royal-espresso mb-1 tracking-tight">
-            Prabhudas &amp; Somya
-          </h2>
-
-          <p className="font-cinzel text-[10px] sm:text-[11px] uppercase tracking-[0.25em] text-gold-800/80 mb-3">
-            Engagement Ceremony • November 22
-          </p>
-
-          {/* Clickable Envelope Container - Fits Mobile Screen Magnificently */}
-          <div
+          {/* Clickable Envelope Container - Fits Mobile Screen Perfectly with NO details above */}
+          <motion.div
             onClick={handleOpenEnvelope}
+            animate={isOpening ? { scale: [1, 1.04, 0.96], opacity: [1, 1, 0.7] } : {}}
+            transition={{ duration: 0.7 }}
             className="group relative cursor-pointer mx-auto w-full max-w-[290px] xs:max-w-[330px] sm:max-w-[380px] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
-            title="Click to open invitation directly"
+            title="Click to open invitation"
           >
             {/* Subtle Gold Ambient Glow */}
             <div className="absolute -inset-1.5 bg-gradient-to-r from-gold-300/30 via-gold-400/40 to-gold-300/30 rounded-2xl blur-md group-hover:blur-lg opacity-75 group-hover:opacity-100 transition-all duration-300" />
@@ -224,7 +227,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
               <img
                 src="/envelope-closed.jpg"
                 alt="Royal Engagement Invitation Envelope"
-                className="w-full h-auto max-h-[48vh] sm:max-h-[52vh] object-cover transform transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto max-h-[50vh] sm:max-h-[54vh] object-cover transform transition-transform duration-500 group-hover:scale-105"
               />
 
               {/* Shimmering pulse over the wax seal */}
@@ -234,24 +237,24 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
             </div>
 
             {/* "Tap to Open" Callout Button */}
-            <div className="mt-3.5 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-gold-500 via-gold-600 to-gold-500 text-white text-xs font-sans font-semibold uppercase tracking-[0.2em] shadow-royal hover:shadow-royal-lg transition-all">
+            <div className="mt-4 inline-flex items-center gap-2 px-7 py-3 rounded-full bg-gradient-to-r from-gold-500 via-gold-600 to-gold-500 text-white text-xs sm:text-sm font-sans font-semibold uppercase tracking-[0.2em] shadow-royal hover:shadow-royal-lg transition-all animate-pulse">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Tap to Open</span>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       ) : (
         /* ──────────────────────────────────────────────────────────────────────────
-            STATE 2: REVEALED INVITATION CARD (Centered, Direct, No Sideways Jump)
+            STATE 2: REVEALED INVITATION CARD (Smooth Entrance Animation)
             ────────────────────────────────────────────────────────────────────────── */
         <motion.div
           key="revealed-hero-content"
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.45, ease: 'easeOut' }}
+          initial={{ opacity: 0, y: 35, scale: 0.94 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-20 max-w-2xl w-full mx-auto px-4 text-center my-auto"
         >
-          {/* Inner Letter Card Presentation */}
+          {/* Inner White Letter Card Presentation */}
           <div className="relative rounded-2xl p-4 sm:p-6 bg-royal-card border border-gold-300/70 shadow-royal-lg">
             {/* Inner Ornamental Border */}
             <div className="absolute inset-2 sm:inset-3 border border-gold-300/30 rounded-xl pointer-events-none" />
@@ -307,7 +310,7 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
             </p>
 
             {/* Editorial Frame Cover Image - Completely Visible Hands & Garland */}
-            <div className="relative max-w-[250px] sm:max-w-[280px] mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md mb-3.5 group">
+            <div className="relative max-w-[250px] sm:max-w-[280px] mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md group">
               <div className="relative overflow-hidden rounded-lg bg-royal-cream/60 flex items-center justify-center">
                 <img
                   src={siteConfig.hero.coverImage}
@@ -317,24 +320,29 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
                 />
               </div>
             </div>
-
-            {/* Fully Visible Action Buttons */}
-            <div className="flex flex-row items-center justify-center gap-3 max-w-sm mx-auto pt-1">
-              <button
-                onClick={() => scrollTo('gallery')}
-                className="flex-1 px-5 py-2.5 rounded-full bg-gold-600 hover:bg-gold-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all"
-              >
-                {siteConfig.hero.primaryCta}
-              </button>
-              <button
-                onClick={() => scrollTo('upload')}
-                className="flex-1 px-5 py-2.5 rounded-full bg-royal-cream hover:bg-gold-50 text-gold-900 border border-gold-400 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-sm transition-all flex items-center justify-center gap-1.5"
-              >
-                <Camera className="w-3.5 h-3.5 text-gold-700" />
-                <span>Upload</span>
-              </button>
-            </div>
           </div>
+
+          {/* Action Buttons - Located OUTSIDE & BELOW the White Box */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="flex flex-row items-center justify-center gap-3 max-w-sm mx-auto mt-4 px-1"
+          >
+            <button
+              onClick={() => scrollTo('gallery')}
+              className="flex-1 px-5 py-3 rounded-full bg-gold-600 hover:bg-gold-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all"
+            >
+              {siteConfig.hero.primaryCta}
+            </button>
+            <button
+              onClick={() => scrollTo('upload')}
+              className="flex-1 px-5 py-3 rounded-full bg-white hover:bg-gold-50 text-gold-900 border border-gold-400 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-sm transition-all flex items-center justify-center gap-1.5"
+            >
+              <Camera className="w-3.5 h-3.5 text-gold-700" />
+              <span>Upload</span>
+            </button>
+          </motion.div>
 
           {/* Scroll Indicator */}
           <div className="mt-3">

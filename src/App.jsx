@@ -43,6 +43,7 @@ export function App() {
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isSlideshowActive, setIsSlideshowActive] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   // Delete modal state
@@ -99,6 +100,18 @@ export function App() {
 
   const handleOpenLightbox = (item) => {
     setLightboxItem(item);
+    setIsSlideshowActive(false);
+    setIsLightboxOpen(true);
+    window.history.pushState({ modal: 'lightbox' }, '');
+  };
+
+  const handleStartSlideshow = () => {
+    if (filteredMedia.length === 0) {
+      toast.error('No photos available to play slideshow.');
+      return;
+    }
+    setLightboxItem(filteredMedia[0]);
+    setIsSlideshowActive(true);
     setIsLightboxOpen(true);
     window.history.pushState({ modal: 'lightbox' }, '');
   };
@@ -106,6 +119,7 @@ export function App() {
   const handleCloseLightbox = () => {
     setIsLightboxOpen(false);
     setLightboxItem(null);
+    setIsSlideshowActive(false);
     if (window.history.state?.modal === 'lightbox') {
       window.history.back();
     }
@@ -194,6 +208,7 @@ export function App() {
               getFavouriteCount={getFavouriteCount}
               onToggleFavourite={toggleFavourite}
               onOpenLightbox={handleOpenLightbox}
+              onStartSlideshow={handleStartSlideshow}
               onDownload={handleDownloadIndividual}
               onRequestDelete={handleRequestDelete}
               onRefresh={refreshGallery}
@@ -223,6 +238,7 @@ export function App() {
         onToggleFavourite={toggleFavourite}
         onDownload={handleDownloadIndividual}
         onRequestDelete={handleRequestDelete}
+        initialSlideshow={isSlideshowActive}
       />
 
       {/* Delete Confirmation Modal (Requires nov22) */}

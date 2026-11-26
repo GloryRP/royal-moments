@@ -276,18 +276,32 @@ export function PhotoCard({
         )}
       </div>
 
-      {/* Clean Bottom Date Strip - Compact & Refined */}
-      <div className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-white flex items-center justify-between text-[10px] sm:text-[11px] text-royal-espresso/50 font-sans border-t border-gold-100/60">
+      {/* Clean Bottom Strip with Date, Likes, and Direct 1-Tap Download Icon */}
+      <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-white flex items-center justify-between text-[10px] sm:text-[11px] text-royal-espresso/50 font-sans border-t border-gold-100/60">
         <div className="flex items-center gap-1 truncate mr-1">
           <Clock className="w-3 h-3 text-gold-600/70 shrink-0" />
           <span className="truncate">{formatMediaDate(item.created_at)}</span>
         </div>
-        {favouriteCount > 0 && (
-          <span className="flex items-center gap-0.5 text-gold-700 font-medium shrink-0">
-            <Heart className="w-2.5 h-2.5 fill-gold-500 text-gold-600" />
-            {favouriteCount}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {favouriteCount > 0 && (
+            <span className="flex items-center gap-0.5 text-gold-700 font-medium">
+              <Heart className="w-2.5 h-2.5 fill-gold-500 text-gold-600" />
+              {favouriteCount}
+            </span>
+          )}
+          {/* Direct 1-Tap Download Icon on Every Picture */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload(item);
+            }}
+            className="action-button p-1 rounded-full text-gold-600 hover:text-gold-800 hover:bg-gold-100/70 active:scale-90 transition-all"
+            title="Download original photo"
+            aria-label="Download original photo"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -9,12 +9,14 @@ import {
   User, 
   Clock, 
   ZoomIn, 
-  ZoomOut,
-  RotateCcw,
-  MessageCircle,
-  MoreVertical,
-  Trash2,
-  Share2
+  ZoomOut, 
+  RotateCcw, 
+  MessageCircle, 
+  MoreVertical, 
+  Trash2, 
+  Share2,
+  Play,
+  Pause
 } from 'lucide-react';
 import { formatMediaDate } from '../utils/formatDate';
 import { formatFileSize } from '../utils/fileValidation';
@@ -29,7 +31,8 @@ export function Lightbox({
   favouriteCount,
   onToggleFavourite,
   onDownload,
-  onRequestDelete
+  onRequestDelete,
+  initialSlideshow = false
 }) {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
@@ -38,6 +41,7 @@ export function Lightbox({
   const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [initialPinchDist, setInitialPinchDist] = useState(null);
+  const [isSlideshowRunning, setIsSlideshowRunning] = useState(initialSlideshow);
   
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -50,6 +54,11 @@ export function Lightbox({
       if (idx !== -1) setCurrentIndex(idx);
     }
   }, [item, items]);
+
+  // Sync slideshow state
+  useEffect(() => {
+    setIsSlideshowRunning(initialSlideshow);
+  }, [initialSlideshow, isOpen]);
 
   // Reset zoom on item switch or close
   useEffect(() => {
@@ -70,6 +79,17 @@ export function Lightbox({
     if (items.length <= 1) return;
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   }, [items.length]);
+
+  // Slideshow auto-advance (every 3.5 seconds)
+  useEffect(() => {
+    if (!isOpen || !isSlideshowRunning || items.length <= 1) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % items.length);
+    }, 3500);
+
+    return () => clearInterval(timer);
+  }, [isOpen, isSlideshowRunning, items.length]);
 
   // Keyboard navigation & Escape listener
   useEffect(() => {
@@ -224,6 +244,19 @@ export function Lightbox({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
+        {/* Slideshow Active Progress Indicator */}
+        {isSlideshowRunning && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-white/20 z-40 overflow-hidden">
+            <motion.div
+              key={currentIndex}
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 3.5, ease: 'linear' }}
+              className="h-full bg-gold-400"
+            />
+          </div>
+        )}
+
         {/* Top Floating Control Bar */}
         <div className="absolute top-0 left-0 right-0 p-3 sm:p-5 flex items-center justify-between z-30 bg-gradient-to-b from-black/85 via-black/45 to-transparent">
           <div className="text-white/80 font-sans text-xs sm:text-sm">
@@ -233,6 +266,28 @@ export function Lightbox({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Slideshow Play / Pause Button */}
+            {items.length > 1 && (
+              <button
+                onClick={() => setIsSlideshowRunning(!isSlideshowRunning)}
+                className={`p-2 sm:p-2.5 rounded-full transition-all flex items-center gap-1.5 shadow-md ${
+                  isSlideshowRunning
+                    ? 'bg-gold-500 text-white ring-2 ring-gold-300 animate-pulse'
+                    : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title={isSlideshowRunning ? 'Pause slideshow' : 'Play slideshow'}
+              >
+                {isSlideshowRunning ? (
+                  <Pause className="w-4 h-4 fill-white" />
+                ) : (
+                  <Play className="w-4 h-4 fill-white" />
+                )}
+                <span className="hidden sm:inline text-xs font-semibold">
+                  {isSlideshowRunning ? 'Playing' : 'Slideshow'}
+                </span>
+              </button>
+            )}
+
             {/* Direct WhatsApp Share Button */}
             <button
               onClick={handleWhatsAppShare}

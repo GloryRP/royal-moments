@@ -9,7 +9,8 @@ import {
   Square,
   Download,
   X,
-  Loader2
+  Loader2,
+  Play
 } from 'lucide-react';
 import { PhotoCard } from './PhotoCard';
 import { downloadAlbumZip } from '../services/downloadService';
@@ -30,6 +31,7 @@ export function Gallery({
   getFavouriteCount,
   onToggleFavourite,
   onOpenLightbox,
+  onStartSlideshow,
   onDownload,
   onRequestDelete,
   onRefresh
@@ -162,8 +164,20 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Select Photos, Sort Order & Refresh */}
-          <div className="flex items-center gap-2.5">
+          {/* Right Controls: Slideshow, Select Photos, Sort Order & Refresh */}
+          <div className="flex items-center gap-2">
+            {/* Play Slideshow Button */}
+            {items.length > 0 && !isSelectMode && (
+              <button
+                onClick={onStartSlideshow}
+                className="px-3.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm"
+                title="Play Slideshow from the first photo"
+              >
+                <Play className="w-3.5 h-3.5 text-gold-600 fill-gold-500" />
+                <span>Slideshow</span>
+              </button>
+            )}
+
             {/* Multi-Select Toggle Button */}
             {items.length > 0 && (
               <button
