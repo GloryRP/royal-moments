@@ -35,6 +35,10 @@ export function useGallery(favouritesSet) {
     setMedia((prev) => [newRecord, ...prev]);
   }, []);
 
+  const removeMediaItem = useCallback((id) => {
+    setMedia((prev) => prev.filter(m => m.id !== id));
+  }, []);
+
   // Filter & Sort
   const filteredMedia = useMemo(() => {
     let result = [...media];
@@ -75,6 +79,7 @@ export function useGallery(favouritesSet) {
     sortOrder,
     setSortOrder,
     refreshGallery: loadMedia,
-    addMediaItem
+    addMediaItem,
+    removeMediaItem
   };
 }

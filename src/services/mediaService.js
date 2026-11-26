@@ -100,6 +100,30 @@ export async function createMediaRecord(record) {
 }
 
 /**
+ * Deletes a media record with organizer passcode
+ */
+export async function deleteMediaRecord(id, filePath, passcode) {
+  const res = await fetch('/api/delete-media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, filePath, passcode })
+  });
+
+  const result = await res.json();
+  if (!res.ok) {
+    throw new Error(result.error || 'Failed to delete media');
+  }
+
+  // Also clean up local demo storage if applicable
+  try {
+    const local = getLocalDemoMedia().filter(m => m.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(local));
+  } catch (e) {}
+
+  return result;
+}
+
+/**
  * Helper to retrieve locally saved demo items
  */
 export function getLocalDemoMedia() {

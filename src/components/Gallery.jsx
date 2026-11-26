@@ -27,6 +27,7 @@ export function Gallery({
   onToggleFavourite,
   onOpenLightbox,
   onDownload,
+  onRequestDelete,
   onRefresh
 }) {
   const scrollToUpload = () => {
@@ -196,6 +197,7 @@ export function Gallery({
                 onToggleFavourite={onToggleFavourite}
                 onOpenLightbox={onOpenLightbox}
                 onDownload={onDownload}
+                onRequestDelete={onRequestDelete}
               />
             ))}
           </div>

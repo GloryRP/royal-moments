@@ -95,6 +95,67 @@ function devApiPlugin() {
           }
         });
       });
+
+      // Local dev middleware for /api/delete-media
+      server.middlewares.use('/api/delete-media', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ error: 'Method not allowed' }));
+        }
+
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const { id, filePath, passcode } = data;
+
+            const env = loadEnv('', process.cwd(), '');
+            const requiredPasscode = env.ADMIN_DELETE_PASSCODE || 'nov22';
+            if (!passcode || passcode.trim().toLowerCase() !== requiredPasscode.toLowerCase()) {
+              res.statusCode = 401;
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ error: 'Invalid passcode. Only authorized organizers can delete memories.' }));
+            }
+
+            const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+            const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+            if (!supabaseUrl || !serviceRoleKey) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ success: true, id }));
+            }
+
+            const supabase = createClient(supabaseUrl, serviceRoleKey);
+            if (filePath && !filePath.startsWith('blob:')) {
+              let storagePath = filePath;
+              if (filePath.includes('/storage/v1/object/public/media/')) {
+                storagePath = filePath.split('/storage/v1/object/public/media/')[1];
+              }
+              try {
+                await supabase.storage.from('media').remove([storagePath]);
+              } catch (e) {}
+            }
+
+            const { error: dbError } = await supabase.from('media').delete().eq('id', id);
+            if (dbError) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ error: dbError.message }));
+            }
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({ success: true, id }));
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            return res.end(JSON.stringify({ error: err.message || 'Internal error' }));
+          }
+        });
+      });
     }
   };
 }

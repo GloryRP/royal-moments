@@ -8,8 +8,12 @@ import {
   Download, 
   User, 
   Clock, 
-  Maximize, 
-  FileText,
+  ZoomIn, 
+  ZoomOut,
+  RotateCcw,
+  MessageCircle,
+  MoreVertical,
+  Trash2,
   Share2
 } from 'lucide-react';
 import { formatMediaDate } from '../utils/formatDate';
@@ -24,11 +28,16 @@ export function Lightbox({
   isFavourited,
   favouriteCount,
   onToggleFavourite,
-  onDownload
+  onDownload,
+  onRequestDelete
 }) {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [initialPinchDist, setInitialPinchDist] = useState(null);
 
   // Sync current index when selected item changes
   useEffect(() => {
@@ -37,6 +46,13 @@ export function Lightbox({
       if (idx !== -1) setCurrentIndex(idx);
     }
   }, [item, items]);
+
+  // Reset zoom on item switch or close
+  useEffect(() => {
+    setZoomScale(1);
+    setPanPosition({ x: 0, y: 0 });
+    setMenuOpen(false);
+  }, [currentIndex, isOpen]);
 
   const currentItem = items[currentIndex] || item;
 
@@ -65,7 +81,6 @@ export function Lightbox({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    // Prevent background scrolling while open
     document.body.style.overflow = 'hidden';
 
     return () => {
@@ -74,47 +89,63 @@ export function Lightbox({
     };
   }, [isOpen, onClose, handleNext, handlePrev]);
 
-  // Touch Swipe for mobile devices
-  const minSwipeDistance = 50;
-
+  // Touch handlers for Swipe and Pinch-to-zoom
   const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+    if (e.touches.length === 2) {
+      // Pinch gesture start
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setInitialPinchDist(dist);
+    } else if (e.touches.length === 1 && zoomScale === 1) {
+      setTouchEnd(null);
+      setTouchStart(e.targetTouches[0].clientX);
+    }
   };
 
   const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    if (e.touches.length === 2 && initialPinchDist) {
+      // Pinch zooming
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / initialPinchDist;
+      setZoomScale((prev) => Math.min(3, Math.max(1, prev * (ratio > 1 ? 1.03 : 0.97))));
+    } else if (e.touches.length === 1 && zoomScale === 1) {
+      setTouchEnd(e.targetTouches[0].clientX);
+    }
   };
 
   const onTouchEnd = () => {
+    setInitialPinchDist(null);
+    if (zoomScale > 1) return; // Don't swipe while zoomed in
+
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
+    if (distance > 50) {
       handleNext();
-    } else if (isRightSwipe) {
+    } else if (distance < -50) {
       handlePrev();
     }
   };
 
-  const handleShare = async () => {
+  // Double-tap or double-click to toggle zoom (1x <-> 2x)
+  const handleDoubleTap = () => {
+    setZoomScale((prev) => (prev > 1 ? 1 : 2));
+    setPanPosition({ x: 0, y: 0 });
+  };
+
+  // Direct WhatsApp share
+  const handleWhatsAppShare = () => {
     if (!currentItem) return;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Royal Moments — Engagement Memory',
-          text: currentItem.caption || `Engagement moment shared by ${currentItem.contributor_name}`,
-          url: window.location.href
-        });
-      } catch (err) {
-        // User cancelled or share failed
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Gallery link copied to clipboard!');
-    }
+    setMenuOpen(false);
+    const mediaUrl = currentItem.url || currentItem.file_path;
+    const text = encodeURIComponent(
+      `Check out this beautiful photo from Prabhudas & Somya's Engagement Ceremony! 💍✨\n\n"${currentItem.caption || currentItem.file_name}"\n\nView memory here: ${mediaUrl}`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   if (!isOpen || !currentItem) return null;
@@ -124,28 +155,54 @@ export function Lightbox({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Top Floating Control Bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+        <div className="absolute top-0 left-0 right-0 p-3 sm:p-5 flex items-center justify-between z-30 bg-gradient-to-b from-black/85 via-black/45 to-transparent">
           <div className="text-white/80 font-sans text-xs sm:text-sm">
             <span className="font-serif italic text-gold-300">
               {currentIndex + 1} of {items.length || 1}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Share */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Direct WhatsApp Share Button */}
             <button
-              onClick={handleShare}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
-              aria-label="Share memory"
+              onClick={handleWhatsAppShare}
+              className="p-2 sm:p-2.5 rounded-full bg-emerald-700/80 hover:bg-emerald-600 text-white transition-all shadow-md flex items-center gap-1.5"
+              title="Share on WhatsApp"
             >
-              <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <span className="hidden sm:inline text-xs font-semibold">Share</span>
             </button>
+
+            {/* Zoom Controls (Images only) */}
+            {!isVideo && (
+              <div className="hidden sm:flex items-center gap-1 bg-white/10 rounded-full p-1 border border-white/10">
+                <button
+                  onClick={() => setZoomScale((z) => Math.max(1, z - 0.5))}
+                  disabled={zoomScale <= 1}
+                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-mono text-gold-200 px-1">
+                  {Math.round(zoomScale * 100)}%
+                </span>
+                <button
+                  onClick={() => setZoomScale((z) => Math.min(3, z + 0.5))}
+                  disabled={zoomScale >= 3}
+                  className="p-1.5 text-white/80 hover:text-white disabled:opacity-40 transition"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* Favourite button */}
             <button
@@ -166,16 +223,63 @@ export function Lightbox({
             {/* Download Original button */}
             <button
               onClick={() => onDownload(currentItem)}
-              className="p-2.5 rounded-full bg-gold-600 hover:bg-gold-500 text-white transition-all shadow-md"
-              aria-label="Download original"
+              className="p-2 sm:p-2.5 rounded-full bg-gold-600 hover:bg-gold-500 text-white transition-all shadow-md"
+              title="Download original"
             >
               <Download className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
+            {/* 3-Dots Options Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+                title="More options"
+              >
+                <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-11 w-48 bg-royal-card rounded-xl shadow-2xl border border-gold-300 py-2 z-40 text-royal-espresso">
+                  <button
+                    onClick={handleWhatsAppShare}
+                    className="w-full px-4 py-2 text-left text-xs font-sans hover:bg-gold-50 flex items-center gap-2 transition"
+                  >
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Share on WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDownload(currentItem);
+                    }}
+                    className="w-full px-4 py-2 text-left text-xs font-sans hover:bg-gold-50 flex items-center gap-2 transition"
+                  >
+                    <Download className="w-4 h-4 text-gold-700" />
+                    <span>Download File</span>
+                  </button>
+
+                  <div className="my-1 border-t border-gold-200/50" />
+
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      if (onRequestDelete) onRequestDelete(currentItem);
+                    }}
+                    className="w-full px-4 py-2 text-left text-xs font-sans text-red-600 hover:bg-red-50 flex items-center gap-2 transition font-medium"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <span>Delete (Requires nov22)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
+              className="p-2 sm:p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all"
               aria-label="Close lightbox"
             >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -194,15 +298,17 @@ export function Lightbox({
           </button>
         )}
 
-        {/* Main Content Area */}
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-4 sm:p-12 pb-24 sm:pb-28">
+        {/* Main Content Area with Pinch/Double-tap Zoom */}
+        <div 
+          className="relative w-full h-full flex flex-col items-center justify-center p-3 sm:p-10 pb-20 sm:pb-24 overflow-hidden"
+          onDoubleClick={!isVideo ? handleDoubleTap : undefined}
+        >
           <motion.div
             key={currentItem.id}
             initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: zoomScale }}
             transition={{ duration: 0.2 }}
-            className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden"
+            className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden cursor-zoom-in"
           >
             {isVideo ? (
               <video
@@ -216,7 +322,8 @@ export function Lightbox({
               <img
                 src={currentItem.url || currentItem.file_path}
                 alt={currentItem.caption || currentItem.file_name}
-                className="max-h-[72vh] max-w-[92vw] sm:max-w-[85vw] object-contain rounded-lg shadow-2xl select-none"
+                className="max-h-[72vh] max-w-[92vw] sm:max-w-[85vw] object-contain rounded-lg shadow-2xl select-none transition-transform duration-200"
+                style={{ transform: `scale(${zoomScale})` }}
               />
             )}
           </motion.div>
@@ -234,15 +341,15 @@ export function Lightbox({
         )}
 
         {/* Bottom Details Drawer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white z-20">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white z-20">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
             <div className="space-y-1">
               {currentItem.caption && (
-                <p className="font-serif italic text-base sm:text-lg text-gold-100 max-w-2xl">
+                <p className="font-serif italic text-sm sm:text-base text-gold-100 max-w-2xl">
                   "{currentItem.caption}"
                 </p>
               )}
-              <div className="flex flex-wrap items-center gap-3 text-xs text-white/70 font-sans">
+              <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/70 font-sans">
                 <span className="flex items-center gap-1">
                   <User className="w-3.5 h-3.5 text-gold-400" />
                   <strong className="text-white/90">{currentItem.contributor_name || 'Family Member'}</strong>
@@ -261,9 +368,9 @@ export function Lightbox({
               </div>
             </div>
 
-            {/* Mobile swipe hint */}
+            {/* Mobile zoom & swipe hint */}
             <div className="sm:hidden text-[10px] text-white/50 tracking-wider uppercase font-sans">
-              Swipe left / right to browse
+              Double-tap or pinch to zoom • Swipe to browse
             </div>
           </div>
         </div>

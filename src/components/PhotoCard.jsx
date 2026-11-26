@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { Heart, Play, Download, Maximize2, User, Clock } from 'lucide-react';
+import { 
+  Heart, 
+  Play, 
+  Download, 
+  Maximize2, 
+  User, 
+  Clock, 
+  MoreVertical, 
+  Share2, 
+  Trash2,
+  MessageCircle
+} from 'lucide-react';
 import { formatMediaDate } from '../utils/formatDate';
+import toast from 'react-hot-toast';
 
 export function PhotoCard({
   item,
@@ -8,17 +20,28 @@ export function PhotoCard({
   favouriteCount,
   onToggleFavourite,
   onOpenLightbox,
-  onDownload
+  onDownload,
+  onRequestDelete
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isVideo = item.media_type === 'video';
 
   const handleCardClick = (e) => {
-    // If user clicked heart or download buttons, ignore card open
-    if (e.target.closest('.action-button')) return;
+    if (e.target.closest('.action-button') || e.target.closest('.menu-container')) return;
     onOpenLightbox(item);
+  };
+
+  const handleWhatsAppShare = (e) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    const mediaUrl = item.url || item.file_path;
+    const text = encodeURIComponent(
+      `Look at this beautiful memory from Prabhudas & Somya's Engagement Ceremony! 💍✨\n\n"${item.caption || item.file_name}"\n\nView here: ${mediaUrl}`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   return (
@@ -56,7 +79,7 @@ export function PhotoCard({
                 <Play className="w-5 h-5 fill-current ml-0.5" />
               </div>
             </div>
-            {/* Video duration/badge tag */}
+            {/* Video badge */}
             <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-royal-espresso/70 backdrop-blur-sm text-[10px] font-sans font-medium text-gold-200 uppercase tracking-wider flex items-center gap-1">
               <Play className="w-2.5 h-2.5 fill-current" /> Video
             </div>
@@ -85,8 +108,9 @@ export function PhotoCard({
           </div>
         )}
 
-        {/* Top Right Action: Quick Favourite */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+        {/* Top Right Actions: 3-dots Menu + Favourite Button */}
+        <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+          {/* Quick Favourite */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -101,13 +125,69 @@ export function PhotoCard({
               }`}
             />
           </button>
+
+          {/* 3-Dots Menu Trigger */}
+          <div className="relative menu-container">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(!menuOpen);
+              }}
+              className="action-button p-2 rounded-full bg-royal-ivory/85 backdrop-blur-md border border-gold-300/50 text-royal-espresso hover:text-gold-800 transition-all shadow-sm"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {/* 3-Dots Dropdown Menu */}
+            {menuOpen && (
+              <div 
+                className="absolute right-0 top-10 w-44 bg-white rounded-xl shadow-xl border border-gold-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={handleWhatsAppShare}
+                  className="w-full px-3.5 py-2 text-left text-xs font-sans text-royal-espresso hover:bg-gold-50 flex items-center gap-2 transition"
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Share to WhatsApp</span>
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onDownload(item);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-sans text-royal-espresso hover:bg-gold-50 flex items-center gap-2 transition"
+                >
+                  <Download className="w-4 h-4 text-gold-700" />
+                  <span>Download Original</span>
+                </button>
+
+                <div className="my-1 border-t border-gold-100" />
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    if (onRequestDelete) onRequestDelete(item);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-xs font-sans text-red-600 hover:bg-red-50 flex items-center gap-2 transition font-medium"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                  <span>Delete Memory</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hover Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-royal-espresso/80 via-royal-espresso/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
-          <div className="flex items-center justify-between">
+        <div className="absolute inset-0 bg-gradient-to-t from-royal-espresso/80 via-royal-espresso/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white pointer-events-none">
+          <div className="flex items-center justify-between pointer-events-auto">
             <span className="text-[11px] font-sans text-gold-200 flex items-center gap-1">
-              <Maximize2 className="w-3.5 h-3.5" /> Click to expand
+              <Maximize2 className="w-3.5 h-3.5" /> Tap to view full size
             </span>
             <button
               onClick={(e) => {

@@ -23,9 +23,9 @@ export const siteConfig = {
     subtitle: "Every picture tells a beautiful story of two hearts united in joy.",
     primaryCta: "Explore Our Memories",
     secondaryCta: "Share Your Moments",
-    // Premium luxury editorial engagement photograph
-    coverImage: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2000&q=85",
-    coverImageAlt: "Prabhudas & Somya Engagement Portrait",
+    // Real couple engagement photograph
+    coverImage: "/couple-cover.jpg",
+    coverImageAlt: "Prabhudas & Somya Engagement Hands with Garland & Ring",
   },
 
   // Gallery Configuration

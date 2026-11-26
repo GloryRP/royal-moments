@@ -6,11 +6,13 @@ import { Gallery } from './components/Gallery';
 import { UploadSection } from './components/UploadSection';
 import { Lightbox } from './components/Lightbox';
 import { DownloadModal } from './components/DownloadModal';
+import { DeleteModal } from './components/DeleteModal';
 import { Footer } from './components/Footer';
 import { DemoNotice } from './components/DemoNotice';
 import { useFavourites } from './hooks/useFavourites';
 import { useGallery } from './hooks/useGallery';
 import { downloadIndividualFile } from './services/downloadService';
+import { deleteMediaRecord } from './services/mediaService';
 
 export function App() {
   const {
@@ -33,12 +35,17 @@ export function App() {
     sortOrder,
     setSortOrder,
     refreshGallery,
-    addMediaItem
+    addMediaItem,
+    removeMediaItem
   } = useGallery(favouritesSet);
 
   const [lightboxItem, setLightboxItem] = useState(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
+  // Delete modal state
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleOpenLightbox = (item) => {
     setLightboxItem(item);
@@ -62,6 +69,19 @@ export function App() {
 
   const handleUploadSuccess = (newRecord) => {
     addMediaItem(newRecord);
+  };
+
+  const handleRequestDelete = (item) => {
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async (item, passcode) => {
+    await deleteMediaRecord(item.id, item.file_path, passcode);
+    removeMediaItem(item.id);
+    if (lightboxItem && lightboxItem.id === item.id) {
+      handleCloseLightbox();
+    }
   };
 
   return (
@@ -113,6 +133,7 @@ export function App() {
           onToggleFavourite={toggleFavourite}
           onOpenLightbox={handleOpenLightbox}
           onDownload={handleDownloadIndividual}
+          onRequestDelete={handleRequestDelete}
           onRefresh={refreshGallery}
         />
 
@@ -137,6 +158,18 @@ export function App() {
         favouriteCount={getFavouriteCount}
         onToggleFavourite={toggleFavourite}
         onDownload={handleDownloadIndividual}
+        onRequestDelete={handleRequestDelete}
+      />
+
+      {/* Delete Confirmation Modal (Requires nov22) */}
+      <DeleteModal
+        item={itemToDelete}
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirmDelete={handleConfirmDelete}
       />
 
       {/* Elegant Footer */}
