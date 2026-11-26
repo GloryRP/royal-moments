@@ -13,9 +13,19 @@ export function Footer() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-        {/* Monogram Seal */}
-        <div className="w-14 h-14 rounded-full border border-gold-500/50 bg-royal-espresso/80 flex items-center justify-center text-gold-400 font-cinzel text-sm tracking-widest mx-auto mb-6 shadow-royal">
-          {siteConfig.couple.monogram}
+        {/* Monogram Seal inside Heart */}
+        <div className="relative w-14 h-14 flex items-center justify-center mx-auto mb-6">
+          <svg viewBox="0 0 40 40" className="w-14 h-14 drop-shadow-md" fill="none">
+            <path
+              d="M20 34.5 C20 34.5 4.5 23.5 4.5 13 C4.5 7.5 9 4 14.5 4 C17.8 4 20 6.2 20 6.2 C20 6.2 22.2 4 25.5 4 C31 4 35.5 7.5 35.5 13 C35.5 23.5 20 34.5 20 34.5 Z"
+              fill="rgba(46, 35, 29, 0.85)"
+              stroke="#D4AF47"
+              strokeWidth="1.8"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center pt-0.5 text-gold-300 font-cinzel font-bold text-xs tracking-tight select-none">
+            P &amp; S
+          </span>
         </div>
 
         {/* Couple's Names */}

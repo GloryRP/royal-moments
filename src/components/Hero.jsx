@@ -308,13 +308,13 @@ export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
                 {siteConfig.hero.heading}
               </p>
 
-              {/* Couple's Names in Flowing Calligraphy */}
-              <div className="mb-1">
-                <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
+              {/* Couple's Names in Flowing Luxury Calligraphy */}
+              <div className="mb-2">
+                <h1 className="font-greatvibes text-4xl xs:text-5xl sm:text-6xl text-royal-espresso font-normal leading-tight tracking-normal drop-shadow-sm">
                   {siteConfig.couple.partnerOne}
                 </h1>
-                <div className="font-pinyon text-2xl sm:text-3xl text-gold-600/80 my-0.5">&amp;</div>
-                <h1 className="font-pinyon text-4xl sm:text-5xl md:text-6xl text-royal-espresso font-normal leading-[0.95] tracking-tight">
+                <div className="font-greatvibes text-2xl xs:text-3xl sm:text-4xl text-gold-600 my-0.5">&amp;</div>
+                <h1 className="font-greatvibes text-4xl xs:text-5xl sm:text-6xl text-royal-espresso font-normal leading-tight tracking-normal drop-shadow-sm">
                   {siteConfig.couple.partnerTwo}
                 </h1>
               </div>

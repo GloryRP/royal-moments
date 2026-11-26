@@ -34,9 +34,10 @@ export default {
       fontFamily: {
         serif: ['"Cormorant Garamond"', 'Playfair Display', 'Georgia', 'serif'],
         cinzel: ['"Cinzel"', 'serif'],
-        script: ['"Pinyon Script"', '"Alex Brush"', '"Great Vibes"', 'cursive'],
-        pinyon: ['"Pinyon Script"', 'cursive'],
+        script: ['"Great Vibes"', '"Alex Brush"', '"Pinyon Script"', 'cursive'],
+        greatvibes: ['"Great Vibes"', 'cursive'],
         alex: ['"Alex Brush"', 'cursive'],
+        pinyon: ['"Pinyon Script"', 'cursive'],
         sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
       boxShadow: {

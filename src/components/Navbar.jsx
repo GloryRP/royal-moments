@@ -43,20 +43,28 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter }) {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Brand Logo & Monogram */}
+          {/* Brand Logo & Monogram inside Heart */}
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center space-x-3 text-left group"
+            className="flex items-center space-x-2.5 sm:space-x-3 text-left group"
           >
-            <div className="w-10 h-10 rounded-full border border-gold-400/60 bg-royal-cream flex items-center justify-center text-gold-700 font-cinzel font-bold text-xs tracking-widest shadow-sm group-hover:scale-105 transition-transform">
-              {siteConfig.couple.monogram}
+            {/* P & S Monogram inside Heart */}
+            <div className="relative w-10 h-10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <svg viewBox="0 0 40 40" className="w-10 h-10 drop-shadow-sm" fill="none">
+                <path
+                  d="M20 34.5 C20 34.5 4.5 23.5 4.5 13 C4.5 7.5 9 4 14.5 4 C17.8 4 20 6.2 20 6.2 C20 6.2 22.2 4 25.5 4 C31 4 35.5 7.5 35.5 13 C35.5 23.5 20 34.5 20 34.5 Z"
+                  fill="#FAF6EC"
+                  stroke="#C5A059"
+                  strokeWidth="1.8"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center pt-0.5 text-gold-800 font-cinzel font-bold text-[10px] tracking-tighter select-none">
+                P &amp; S
+              </span>
             </div>
             <div>
-              <span className="font-cinzel text-base sm:text-lg font-semibold tracking-wider text-royal-espresso block leading-tight">
-                ROYAL MOMENTS
-              </span>
-              <span className="font-serif italic text-xs text-gold-600 block">
-                {siteConfig.couple.fullName}
+              <span className="font-cinzel text-sm sm:text-base md:text-lg font-bold tracking-wider text-royal-espresso block leading-tight">
+                RAMULA'S PRESENTS
               </span>
             </div>
           </button>
