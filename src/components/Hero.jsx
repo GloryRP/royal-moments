@@ -141,16 +141,25 @@ export function FlyingButterfly({ style = {}, className = '', scale = 1 }) {
 /* ══════════════════════════════════════════════════════════════════════════════
    HERO SECTION — DIRECT ENVELOPE OPENING (NO SIDEWAYS DRIFT OR DELAY)
    ══════════════════════════════════════════════════════════════════════════════ */
-export function Hero() {
-  const [isOpen, setIsOpen] = useState(false);
+export function Hero({ isOpen: controlledIsOpen, onOpen, onClose }) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
   // Directly open immediately on click - no delay, perfectly centered
   const handleOpenEnvelope = () => {
-    setIsOpen(true);
+    if (onOpen) {
+      onOpen();
+    } else {
+      setInternalIsOpen(true);
+    }
   };
 
   const handleReclose = () => {
-    setIsOpen(false);
+    if (onClose) {
+      onClose();
+    } else {
+      setInternalIsOpen(false);
+    }
   };
 
   const scrollTo = (id) => {
@@ -161,7 +170,11 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative min-h-[calc(100vh-64px)] flex items-center justify-center pt-14 pb-8 sm:pt-16 sm:pb-12"
+      className={`relative flex items-center justify-center transition-all duration-500 ${
+        !isOpen
+          ? 'min-h-screen h-screen overflow-hidden'
+          : 'min-h-[calc(100vh-64px)] pt-14 pb-8 sm:pt-16 sm:pb-12'
+      }`}
     >
       {/* Luxurious Ambient Glow */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FBF8F2] via-[#F6EFE5] to-[#FBF8F2] pointer-events-none" />

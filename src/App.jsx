@@ -39,6 +39,7 @@ export function App() {
     removeMediaItem
   } = useGallery(favouritesSet);
 
+  const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -47,14 +48,66 @@ export function App() {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // Envelope open/close handlers with history state
+  const handleOpenEnvelope = () => {
+    setIsEnvelopeOpen(true);
+    window.history.pushState({ page: 'invitation' }, '');
+  };
+
+  const handleCloseEnvelope = () => {
+    setIsEnvelopeOpen(false);
+    if (window.history.state?.page === 'invitation') {
+      window.history.back();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Mobile Back Button Management (Prevents exiting the web app on back swipe/press)
+  useEffect(() => {
+    const handlePopState = () => {
+      // 1. If Lightbox is open, close it first without leaving website
+      if (isLightboxOpen) {
+        setIsLightboxOpen(false);
+        setLightboxItem(null);
+        return;
+      }
+
+      // 2. If Delete modal is open, close it
+      if (isDeleteModalOpen) {
+        setIsDeleteModalOpen(false);
+        setItemToDelete(null);
+        return;
+      }
+
+      // 3. If Download modal is open, close it
+      if (isDownloadModalOpen) {
+        setIsDownloadModalOpen(false);
+        return;
+      }
+
+      // 4. If Envelope is open, return to sealed envelope gate
+      if (isEnvelopeOpen) {
+        setIsEnvelopeOpen(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isLightboxOpen, isDeleteModalOpen, isDownloadModalOpen, isEnvelopeOpen]);
+
   const handleOpenLightbox = (item) => {
     setLightboxItem(item);
     setIsLightboxOpen(true);
+    window.history.pushState({ modal: 'lightbox' }, '');
   };
 
   const handleCloseLightbox = () => {
     setIsLightboxOpen(false);
     setLightboxItem(null);
+    if (window.history.state?.modal === 'lightbox') {
+      window.history.back();
+    }
   };
 
   const handleDownloadIndividual = async (item) => {
@@ -85,7 +138,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-royal-ivory text-royal-espresso flex flex-col font-sans selection:bg-gold-200">
+    <div className={`min-h-screen bg-royal-ivory text-royal-espresso flex flex-col font-sans selection:bg-gold-200 ${!isEnvelopeOpen ? 'h-screen overflow-hidden' : ''}`}>
       {/* Toast Notification Provider */}
       <Toaster
         position="bottom-right"
@@ -102,43 +155,53 @@ export function App() {
         }}
       />
 
-      {/* Demo Mode Notice Banner (Visible only when Supabase is in local fallback mode) */}
-      <DemoNotice isDemo={isDemo} />
+      {/* Demo Mode Notice Banner (Visible only when envelope is open and Supabase is in local fallback mode) */}
+      {isEnvelopeOpen && <DemoNotice isDemo={isDemo} />}
 
-      {/* Sticky Royal Navigation */}
-      <Navbar
-        favouriteCount={favouriteCount}
-        onOpenDownload={() => setIsDownloadModalOpen(true)}
-        onNavigateFilter={(targetFilter) => setFilter(targetFilter)}
-      />
+      {/* Sticky Royal Navigation - Visible only once envelope is opened */}
+      {isEnvelopeOpen && (
+        <Navbar
+          favouriteCount={favouriteCount}
+          onOpenDownload={() => setIsDownloadModalOpen(true)}
+          onNavigateFilter={(targetFilter) => setFilter(targetFilter)}
+        />
+      )}
 
       {/* Main Content Sections */}
-      <main className="flex-1">
+      <main className={`flex-1 ${!isEnvelopeOpen ? 'h-screen overflow-hidden' : ''}`}>
         {/* Landing / Hero Section */}
-        <Hero />
-
-        {/* Memories Gallery */}
-        <Gallery
-          items={filteredMedia}
-          isLoading={isLoading}
-          error={error}
-          isDemo={isDemo}
-          filter={filter}
-          setFilter={setFilter}
-          sortOrder={sortOrder}
-          setSortOrder={setSortOrder}
-          favouriteCount={favouriteCount}
-          isFavourited={isFavourited}
-          getFavouriteCount={getFavouriteCount}
-          onToggleFavourite={toggleFavourite}
-          onOpenLightbox={handleOpenLightbox}
-          onDownload={handleDownloadIndividual}
-          onRequestDelete={handleRequestDelete}
-          onRefresh={refreshGallery}
+        <Hero
+          isOpen={isEnvelopeOpen}
+          onOpen={handleOpenEnvelope}
+          onClose={handleCloseEnvelope}
         />
 
-        {/* Upload Memories Section */}
-        <UploadSection onUploadSuccess={handleUploadSuccess} />
+        {/* Memories Gallery & Upload Sections - Unlocked only after opening the envelope */}
+        {isEnvelopeOpen && (
+          <>
+            <Gallery
+              items={filteredMedia}
+              isLoading={isLoading}
+              error={error}
+              isDemo={isDemo}
+              filter={filter}
+              setFilter={setFilter}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              favouriteCount={favouriteCount}
+              isFavourited={isFavourited}
+              getFavouriteCount={getFavouriteCount}
+              onToggleFavourite={toggleFavourite}
+              onOpenLightbox={handleOpenLightbox}
+              onDownload={handleDownloadIndividual}
+              onRequestDelete={handleRequestDelete}
+              onRefresh={refreshGallery}
+            />
+
+            <UploadSection onUploadSuccess={handleUploadSuccess} />
+            <Footer />
+          </>
+        )}
       </main>
 
       {/* Full Album ZIP Download Modal */}
@@ -171,9 +234,6 @@ export function App() {
         }}
         onConfirmDelete={handleConfirmDelete}
       />
-
-      {/* Elegant Footer */}
-      <Footer />
     </div>
   );
 }
