@@ -103,6 +103,15 @@ export async function createMediaRecord(record) {
  * Deletes a media record with organizer passcode
  */
 export async function deleteMediaRecord(id, filePath, passcode) {
+  // If local demo item or temporary blob, remove directly
+  if (String(id).startsWith('local_') || (filePath && filePath.startsWith('blob:'))) {
+    try {
+      const local = getLocalDemoMedia().filter(m => m.id !== id);
+      localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(local));
+    } catch (e) {}
+    return { success: true, id };
+  }
+
   const res = await fetch('/api/delete-media', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

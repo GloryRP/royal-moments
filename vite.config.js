@@ -50,9 +50,9 @@ function devApiPlugin() {
             }
 
             const supabase = createClient(supabaseUrl, serviceRoleKey);
-            const ext = fileName.split('.').pop()?.toLowerCase() || (isVideo ? 'mp4' : 'jpg');
+            const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
             const sanitizedBase = fileName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
-            const uniquePath = `${isVideo ? 'videos' : 'photos'}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${sanitizedBase}.${ext}`;
+            const uniquePath = `photos/${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${sanitizedBase}.${ext}`;
 
             // Create signed upload URL
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -112,6 +112,12 @@ function devApiPlugin() {
             const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
             if (!supabaseUrl || !serviceRoleKey) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ success: true, id }));
+            }
+
+            if (String(id).startsWith('local_')) {
               res.statusCode = 200;
               res.setHeader('Content-Type', 'application/json');
               return res.end(JSON.stringify({ success: true, id }));

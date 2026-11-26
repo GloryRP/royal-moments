@@ -35,6 +35,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Media ID is required.' });
     }
 
+    // Skip database call for local demo items
+    if (String(id).startsWith('local_')) {
+      return res.status(200).json({ success: true, id });
+    }
+
     // 2. Initialize Supabase Admin Client
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

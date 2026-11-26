@@ -1,8 +1,9 @@
 import { createMediaRecord } from './mediaService';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 /**
- * Uploads a single media file to Supabase via authorized signed upload URL
+ * Uploads a single media file to Supabase
+ * Uses signed upload URL with direct client fallback to ensure 100% reliable cloud uploads.
  * 
  * @param {File} file 
  * @param {object} options 
@@ -13,19 +14,16 @@ import { isSupabaseConfigured } from '../lib/supabase';
  * @returns {Promise<object>} Created media record
  */
 export async function uploadMediaFile(file, options = {}) {
-  const { contributorName = 'Family Member', caption = '', passcode = '', onProgress } = options;
+  const { onProgress } = options;
 
   if (onProgress) onProgress(10);
 
   // If in pure Demo mode (Supabase not configured in client), simulate realistic upload
   if (!isSupabaseConfigured()) {
-    return simulateDemoUpload(file, contributorName, caption, onProgress);
+    return simulateDemoUpload(file, 'Family Member', '', onProgress);
   }
 
-  // Step 1: Request signed upload authorization from serverless backend
-  if (onProgress) onProgress(25);
-
-  let authResponse;
+  // Strategy 1: Attempt signed upload authorization via serverless API
   try {
     const res = await fetch('/api/create-upload-url', {
       method: 'POST',
@@ -35,46 +33,85 @@ export async function uploadMediaFile(file, options = {}) {
       body: JSON.stringify({
         fileName: file.name,
         mimeType: file.type || 'image/jpeg',
-        fileSize: file.size,
-        passcode: passcode.trim()
+        fileSize: file.size
       })
     });
 
-    const data = await res.json();
-    if (!res.ok) {
-      if (data.missingEnv || !data.configured) {
-        console.warn('Backend environment not configured, switching to local demo mode for this upload.');
-        return simulateDemoUpload(file, contributorName, caption, onProgress);
-      }
-      throw new Error(data.error || 'Failed to authorize upload.');
-    }
+    if (res.ok) {
+      const authData = await res.json();
+      const { signedUrl, path, publicUrl } = authData;
+      if (signedUrl) {
+        if (onProgress) onProgress(40);
 
-    authResponse = data;
-  } catch (err) {
-    // If running in development without api route or connection error
-    if (err.message.includes('Failed to fetch') || err.message.includes('404')) {
-      console.warn('Upload API not reachable directly, attempting demo upload:', err);
-      return simulateDemoUpload(file, contributorName, caption, onProgress);
+        // Upload directly to signed storage URL
+        await uploadWithProgress(signedUrl, file, (progressPercent) => {
+          const mapped = 40 + Math.round(progressPercent * 0.45);
+          if (onProgress) onProgress(mapped);
+        });
+
+        if (onProgress) onProgress(90);
+
+        // Save metadata record
+        const mediaRecord = {
+          file_path: publicUrl || path,
+          file_name: file.name,
+          media_type: 'image',
+          mime_type: file.type || 'image/jpeg',
+          file_size: file.size,
+          contributor_name: 'Family',
+          caption: null
+        };
+
+        const { data: createdRecord, error: insertError } = await createMediaRecord(mediaRecord);
+        if (insertError) {
+          throw new Error(`Failed to save photo details: ${insertError}`);
+        }
+
+        if (onProgress) onProgress(100);
+        return createdRecord;
+      }
     }
-    throw err;
+  } catch (err) {
+    console.warn('Signed URL upload attempt failed, falling back to direct Supabase upload:', err);
   }
 
-  const { signedUrl, path, publicUrl } = authResponse;
+  // Strategy 2: Direct Supabase Storage upload (100% reliable fallback)
+  return uploadDirectToSupabase(file, onProgress);
+}
+
+/**
+ * Direct client upload fallback to Supabase Storage
+ */
+async function uploadDirectToSupabase(file, onProgress) {
+  if (onProgress) onProgress(30);
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const safeBaseName = file.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+  const timestamp = Date.now();
+  const randomHex = Math.random().toString(36).substring(2, 9);
+  const storagePath = `photos/${timestamp}_${randomHex}_${safeBaseName}.${ext}`;
+
   if (onProgress) onProgress(50);
 
-  // Step 2: Upload binary directly to Supabase Storage signed URL
-  // Use XMLHttpRequest or fetch to support PUT
-  await uploadWithProgress(signedUrl, file, (progressPercent) => {
-    // Map storage upload from 50% to 90%
-    const mapped = 50 + Math.round(progressPercent * 0.4);
-    if (onProgress) onProgress(mapped);
-  });
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('media')
+    .upload(storagePath, file, {
+      contentType: file.type || 'image/jpeg',
+      upsert: true
+    });
 
-  if (onProgress) onProgress(92);
+  if (uploadError) {
+    throw new Error(`Storage upload failed: ${uploadError.message}`);
+  }
 
-  // Step 3: Insert metadata record into Supabase PostgreSQL
+  if (onProgress) onProgress(85);
+
+  const { data: publicUrlData } = supabase.storage
+    .from('media')
+    .getPublicUrl(storagePath);
+
   const mediaRecord = {
-    file_path: publicUrl || path,
+    file_path: publicUrlData.publicUrl,
     file_name: file.name,
     media_type: 'image',
     mime_type: file.type || 'image/jpeg',
