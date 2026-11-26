@@ -167,7 +167,7 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative min-h-[calc(100vh-64px)] max-h-[100vh] flex items-center justify-center overflow-hidden pt-16 pb-4 sm:pt-20 sm:pb-6"
+      className="relative min-h-[calc(100vh-64px)] flex items-center justify-center pt-14 pb-8 sm:pt-16 sm:pb-12"
     >
       {/* Luxurious Ambient Glow */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#FBF8F2] via-[#F6EFE5] to-[#FBF8F2] pointer-events-none" />
@@ -359,51 +359,51 @@ export function Hero() {
                 {siteConfig.couple.engagementDate}
               </motion.p>
 
-              {/* Editorial Frame Cover Image - Completely Visible with No Clipping */}
+              {/* Editorial Frame Cover Image - 100% Unclipped & Compact */}
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.55 }}
-                className="relative max-w-xs sm:max-w-sm mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md mb-3 group"
+                transition={{ duration: 0.7, delay: 0.55 }}
+                className="relative max-w-[250px] sm:max-w-[280px] mx-auto rounded-xl p-1 bg-gradient-to-b from-gold-300/50 via-gold-100/30 to-gold-300/50 shadow-md mb-3.5 group"
               >
                 <div className="relative overflow-hidden rounded-lg bg-royal-cream/60 flex items-center justify-center">
                   <img
                     src={siteConfig.hero.coverImage}
                     alt={siteConfig.hero.coverImageAlt}
-                    className="w-full h-auto max-h-[30vh] sm:max-h-[34vh] object-contain mx-auto rounded-lg"
+                    className="w-full h-auto max-h-[22vh] sm:max-h-[25vh] object-contain mx-auto rounded-lg"
                     loading="eager"
                   />
                 </div>
               </motion.div>
 
-              {/* Compact Action Buttons */}
+              {/* Action Buttons - Fully Visible & Prominent */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.65 }}
-                className="flex flex-row items-center justify-center gap-3 max-w-sm mx-auto"
+                className="flex flex-row items-center justify-center gap-3 max-w-sm mx-auto pt-1"
               >
                 <button
                   onClick={() => scrollTo('gallery')}
-                  className="flex-1 px-5 py-2.5 rounded-full bg-gold-600 hover:bg-gold-700 text-white font-sans text-[11px] sm:text-xs font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all"
+                  className="flex-1 px-5 py-2.5 rounded-full bg-gold-600 hover:bg-gold-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all"
                 >
                   {siteConfig.hero.primaryCta}
                 </button>
                 <button
                   onClick={() => scrollTo('upload')}
-                  className="flex-1 px-5 py-2.5 rounded-full bg-royal-cream hover:bg-gold-50 text-gold-900 border border-gold-400 font-sans text-[11px] sm:text-xs font-semibold tracking-wider uppercase shadow-sm transition-all flex items-center justify-center gap-1.5"
+                  className="flex-1 px-5 py-2.5 rounded-full bg-royal-cream hover:bg-gold-50 text-gold-900 border border-gold-400 font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-sm transition-all flex items-center justify-center gap-1.5"
                 >
                   <Camera className="w-3.5 h-3.5 text-gold-700" />
-                  <span>Share</span>
+                  <span>Upload</span>
                 </button>
               </motion.div>
             </div>
 
-            {/* Scroll Indicator */}
-            <div className="mt-2">
+            {/* Scroll Indicator with clear visibility */}
+            <div className="mt-3">
               <button
                 onClick={() => scrollTo('gallery')}
-                className="inline-flex flex-col items-center gap-0.5 text-royal-espresso/50 hover:text-gold-700 transition-colors"
+                className="inline-flex flex-col items-center gap-0.5 text-royal-espresso/60 hover:text-gold-700 transition-colors"
                 aria-label="Scroll to Gallery"
               >
                 <span className="font-cinzel text-[9px] uppercase tracking-widest">Explore Memories</span>
