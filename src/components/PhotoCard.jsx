@@ -36,6 +36,7 @@ export function PhotoCard({
   className = ''
 }) {
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleCardClick = (e) => {
@@ -59,7 +60,7 @@ export function PhotoCard({
       onDrop={isReorderMode ? (e) => onDrop && onDrop(e, item.id) : undefined}
       onDragEnd={isReorderMode ? onDragEnd : undefined}
       onClick={handleCardClick}
-      className={`group relative overflow-hidden bg-royal-sand/20 select-none w-full rounded-sm transition-all duration-150 ${
+      className={`group relative overflow-hidden bg-royal-sand/20 select-none w-full rounded-sm transition-all duration-150 min-h-[220px] sm:min-h-[280px] flex items-center justify-center ${
         isReorderMode
           ? 'cursor-grab active:cursor-grabbing border-2 border-gold-400 shadow-md'
           : 'cursor-pointer hover:opacity-95'
@@ -73,13 +74,24 @@ export function PhotoCard({
           : ''
       } ${className}`}
     >
-      {/* 100% complete full image with natural proportions (never cropped or expanded) */}
+      {/* Loading Shimmer Skeleton (Shows while photo is downloading) */}
+      {!isLoaded && !hasError && (
+        <div className="absolute inset-0 bg-royal-sand/30 animate-pulse flex items-center justify-center pointer-events-none">
+          <div className="w-5 h-5 rounded-full border-2 border-gold-400 border-t-transparent animate-spin" />
+        </div>
+      )}
+
+      {/* 100% complete full image with natural proportions - smoothly fades in when fully decoded */}
       <img
         src={item.url || item.file_path}
         alt={item.file_name}
-        className="w-full h-auto block select-none pointer-events-none"
+        className={`w-full h-auto block select-none pointer-events-none transition-opacity duration-300 ${
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+        onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         loading="lazy"
+        decoding="async"
       />
 
       {/* Fallback broken image indicator */}

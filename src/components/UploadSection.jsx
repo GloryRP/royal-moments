@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { validateMediaFile, formatFileSize } from '../utils/fileValidation';
 import { uploadMediaFile } from '../services/uploadService';
+import { compressImageFile } from '../utils/imageCompressor';
 import { siteConfig } from '../config/siteConfig';
 import toast from 'react-hot-toast';
 
@@ -183,7 +184,17 @@ export function UploadSection({ onUploadSuccess }) {
         });
 
         try {
-          const uploadedRecord = await uploadMediaFile(currentItem.file, {
+          // Auto-optimize camera photos (e.g. 15MB down to ~600KB)
+          let fileToUpload = currentItem.file;
+          if (fileToUpload.type && fileToUpload.type.startsWith('image/')) {
+            try {
+              fileToUpload = await compressImageFile(fileToUpload);
+            } catch (compErr) {
+              console.warn('Image compression fallback to original:', compErr);
+            }
+          }
+
+          const uploadedRecord = await uploadMediaFile(fileToUpload, {
             signal: abortControllerRef.current.signal,
             onProgress: (percent) => {
               if (isCancelledRef.current || abortControllerRef.current?.signal.aborted) return;

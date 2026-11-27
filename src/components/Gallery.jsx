@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sparkles, 
   Heart, 
@@ -19,6 +19,8 @@ import { downloadAlbumZip } from '../services/downloadService';
 import { saveMediaOrder } from '../services/mediaService';
 import { siteConfig } from '../config/siteConfig';
 import toast from 'react-hot-toast';
+
+const BATCH_SIZE = 24; // Load in batches of 24 to keep initial page load blazing fast
 
 export function Gallery({
   items = [],
@@ -47,11 +49,40 @@ export function Gallery({
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
 
+  // Progressive batch loading (Infinite scroll)
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const loadMoreRef = useRef(null);
+
   // Reorder State
   const [reorderList, setReorderList] = useState([]);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
+
+  // Reset visible batch count when filter or sort changes
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [filter, sortOrder]);
+
+  // Infinite scroll observer: Automatically loads next batch when user scrolls near bottom
+  useEffect(() => {
+    if (isReorderMode) return;
+
+    const currentRef = loadMoreRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, items.length));
+        }
+      },
+      { rootMargin: '600px' } // Pre-load 600px before reaching the end for seamless scrolling
+    );
+
+    observer.observe(currentRef);
+    return () => observer.disconnect();
+  }, [visibleCount, items.length, isReorderMode]);
 
   // Initialize reorderList when Reorder mode is triggered from navbar
   useEffect(() => {
@@ -100,11 +131,13 @@ export function Gallery({
   const gridColsClass = numColumns === 2 ? 'grid-cols-2' : numColumns === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
   const activeItems = isReorderMode ? reorderList : items;
+  // In normal gallery mode, only render visibleCount photos for instantaneous load & low memory
+  const displayItems = isReorderMode ? activeItems : activeItems.slice(0, visibleCount);
 
   // Distribute items row-wise across columns (e.g. 2 cols -> Col 0 gets 1, 3, 5; Col 1 gets 2, 4, 6)
   // This guarantees horizontal order: [1] [2], then [3] [4], then [5] [6], etc.
   const columnBuckets = Array.from({ length: numColumns }, () => []);
-  activeItems.forEach((item, index) => {
+  displayItems.forEach((item, index) => {
     columnBuckets[index % numColumns].push({ item, index });
   });
 
@@ -488,6 +521,22 @@ export function Gallery({
                 ))}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Infinite Scroll Sentinel & Load More Trigger */}
+        {!isLoading && !isReorderMode && activeItems.length > visibleCount && (
+          <div ref={loadMoreRef} className="w-full py-8 text-center flex flex-col items-center justify-center gap-2">
+            <button
+              onClick={() => setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, activeItems.length))}
+              className="px-6 py-2.5 rounded-full bg-white border border-gold-300 text-royal-espresso hover:bg-gold-50 text-xs sm:text-sm font-sans font-semibold tracking-wide shadow-sm transition inline-flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-gold-600" />
+              <span>Load More Memories ({activeItems.length - visibleCount} more)</span>
+            </button>
+            <span className="text-[11px] font-sans text-royal-espresso/50">
+              Showing {Math.min(visibleCount, activeItems.length)} of {activeItems.length} photos
+            </span>
           </div>
         )}
       </div>
