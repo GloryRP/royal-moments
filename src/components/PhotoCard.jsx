@@ -113,17 +113,17 @@ export function PhotoCard({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`group relative cursor-pointer overflow-hidden bg-royal-sand/30 select-none w-full aspect-[4/5] ${
+      className={`group relative cursor-pointer overflow-hidden bg-royal-sand/20 select-none w-full rounded-sm ${
         isSelected
           ? 'ring-2 sm:ring-3 ring-gold-500 shadow-md scale-[0.98]'
           : 'hover:opacity-95'
       } ${className}`}
     >
-      {/* Seamless edge-to-edge photo with zero vertical gaps */}
+      {/* 100% complete full image with natural proportions (never cropped or expanded) */}
       <img
         src={item.url || item.file_path}
         alt={item.file_name}
-        className="w-full h-full object-cover object-center select-none"
+        className="w-full h-auto block select-none"
         onError={() => setHasError(true)}
         loading="lazy"
       />

@@ -60,11 +60,11 @@ export function Gallery({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const gridColsClass = screenSize === 'mobile'
-    ? (mobileCols === 3 ? 'grid-cols-3' : 'grid-cols-2')
+  const columnClass = screenSize === 'mobile'
+    ? (mobileCols === 3 ? 'columns-3' : 'columns-2')
     : screenSize === 'tablet'
-    ? 'grid-cols-3'
-    : 'grid-cols-4';
+    ? 'columns-3'
+    : 'columns-4';
 
   const scrollToUpload = () => {
     const el = document.getElementById('upload');
@@ -265,13 +265,13 @@ export function Gallery({
           </div>
         </div>
 
-        {/* Loading Skeleton: Tight Hairline Zero Gap */}
+        {/* Loading Skeleton */}
         {isLoading && (
-          <div className={`w-full grid ${gridColsClass} gap-[1.5px] sm:gap-[2px]`}>
+          <div className={`w-full ${columnClass} gap-1.5 sm:gap-2.5 space-y-1.5 sm:space-y-2.5`}>
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="w-full aspect-[4/5] bg-royal-sand/40 animate-pulse"
+                className="w-full h-64 bg-royal-sand/30 rounded-sm animate-pulse break-inside-avoid"
               />
             ))}
           </div>
@@ -311,37 +311,29 @@ export function Gallery({
           </div>
         )}
 
-        {/* Populated Gallery: Google Photos Style 100% Full-Width Hairline Grid (ZERO GAP between photos & ZERO GAP on right side) */}
+        {/* Populated Gallery: Luxury Masonry Gallery (100% Complete Photos - Zero Cropping / Zero Expansion) */}
         {!isLoading && items.length > 0 && (
-          <div className={`w-full grid ${gridColsClass} gap-[1.5px] sm:gap-[2px] items-start`}>
-            {items.map((item, index) => {
-              // When in 2-column mode with an odd total number of photos, make the last photo span full width (col-span-2) so there is never an empty hole on the right!
-              const isLastOddInTwoCols = (screenSize === 'mobile' && mobileCols === 2 || screenSize === 'tablet') && 
-                items.length % 2 !== 0 && 
-                index === items.length - 1;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`w-full ${isLastOddInTwoCols ? 'col-span-2' : ''}`}
-                >
-                  <PhotoCard
-                    item={item}
-                    isFavourited={isFavourited(item.id)}
-                    favouriteCount={getFavouriteCount(item.id)}
-                    onToggleFavourite={onToggleFavourite}
-                    onOpenLightbox={onOpenLightbox}
-                    onDownload={onDownload}
-                    onRequestDelete={onRequestDelete}
-                    isSelectMode={isSelectMode}
-                    isSelected={selectedIds.has(item.id)}
-                    onToggleSelect={handleToggleSelect}
-                    onLongPress={handleLongPress}
-                    className={isLastOddInTwoCols ? '!aspect-[16/9]' : ''}
-                  />
-                </div>
-              );
-            })}
+          <div className={`w-full ${columnClass} gap-1.5 sm:gap-2.5 space-y-1.5 sm:space-y-2.5`}>
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="break-inside-avoid w-full"
+              >
+                <PhotoCard
+                  item={item}
+                  isFavourited={isFavourited(item.id)}
+                  favouriteCount={getFavouriteCount(item.id)}
+                  onToggleFavourite={onToggleFavourite}
+                  onOpenLightbox={onOpenLightbox}
+                  onDownload={onDownload}
+                  onRequestDelete={onRequestDelete}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedIds.has(item.id)}
+                  onToggleSelect={handleToggleSelect}
+                  onLongPress={handleLongPress}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
