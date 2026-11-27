@@ -8,7 +8,7 @@ export function useGallery(favouritesSet) {
   const [error, setError] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
   const [filter, setFilter] = useState('all'); // 'all' | 'photos' | 'videos' | 'favourites'
-  const [sortOrder, setSortOrder] = useState(siteConfig.gallery.defaultSort || 'newest'); // 'newest' | 'oldest'
+  const [sortOrder, setSortOrder] = useState(siteConfig.gallery.defaultSort || 'oldest'); // 'oldest' (insertion order) | 'newest'
 
   const loadMedia = useCallback(async () => {
     setIsLoading(true);
@@ -32,7 +32,8 @@ export function useGallery(favouritesSet) {
   }, [loadMedia]);
 
   const addMediaItem = useCallback((newRecord) => {
-    setMedia((prev) => [newRecord, ...prev]);
+    // Preserve insertion order: new uploads append to the end of the collection
+    setMedia((prev) => [...prev, newRecord]);
   }, []);
 
   const removeMediaItem = useCallback((id) => {

@@ -30,7 +30,7 @@ export const siteConfig = {
     title: "Our Memories",
     subtitle: "A cherished collection of laughter, smiles, and celebrations with our dearest family and friends.",
     pageSize: 24,
-    defaultSort: "newest", // 'newest' | 'oldest'
+    defaultSort: "oldest", // 'oldest' (insertion order: first uploaded stays first) | 'newest'
   },
 
   // Upload Configuration (No size limits, photos only)

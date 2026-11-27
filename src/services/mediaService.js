@@ -21,7 +21,7 @@ export async function fetchMediaList() {
     const { data, error } = await supabase
       .from('media')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Supabase media fetch error:', error);

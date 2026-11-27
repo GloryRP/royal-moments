@@ -246,10 +246,11 @@ export function Gallery({
             <div className="flex items-center gap-1 bg-white border border-gold-200 rounded-full px-2.5 py-1.5 text-xs text-royal-espresso font-sans">
               <ArrowUpDown className="w-3 h-3 text-gold-600" />
               <button
-                onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                onClick={() => setSortOrder(sortOrder === 'oldest' ? 'newest' : 'oldest')}
                 className="font-medium text-gold-800 hover:text-gold-900 capitalize"
+                title={sortOrder === 'oldest' ? 'Showing insertion order (First added first)' : 'Showing newest first'}
               >
-                {sortOrder === 'newest' ? 'Newest' : 'Oldest'}
+                {sortOrder === 'oldest' ? 'First Added' : 'Newest'}
               </button>
             </div>
 
