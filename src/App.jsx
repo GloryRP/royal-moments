@@ -7,6 +7,7 @@ import { UploadSection } from './components/UploadSection';
 import { Lightbox } from './components/Lightbox';
 import { DownloadModal } from './components/DownloadModal';
 import { DeleteModal } from './components/DeleteModal';
+import { InstallAppModal } from './components/InstallAppModal';
 import { Footer } from './components/Footer';
 import { DemoNotice } from './components/DemoNotice';
 import { BackgroundMusic } from './components/BackgroundMusic';
@@ -49,6 +50,50 @@ export function App() {
   // Delete modal state
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // PWA Install state
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    if (typeof window !== 'undefined') {
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        setIsInstalled(true);
+      }
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.addEventListener('appinstalled', handleAppInstalled);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      }
+    };
+  }, []);
+
+  const handlePromptInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setIsInstalled(true);
+        setIsInstallModalOpen(false);
+      }
+      setDeferredPrompt(null);
+    }
+  };
 
   // Envelope open/close handlers with history state
   const handleOpenEnvelope = () => {
@@ -179,6 +224,8 @@ export function App() {
           favouriteCount={favouriteCount}
           onOpenDownload={() => setIsDownloadModalOpen(true)}
           onNavigateFilter={(targetFilter) => setFilter(targetFilter)}
+          onOpenInstall={() => setIsInstallModalOpen(true)}
+          isInstalled={isInstalled}
         />
       )}
 
@@ -225,6 +272,15 @@ export function App() {
         isOpen={isDownloadModalOpen}
         onClose={() => setIsDownloadModalOpen(false)}
         mediaItems={media}
+      />
+
+      {/* PWA App Installation Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+        onPromptInstall={handlePromptInstall}
+        isInstalled={isInstalled}
       />
 
       {/* Fullscreen Lightbox Modal */}
