@@ -7,7 +7,10 @@ import {
   AlertCircle, 
   Sparkles, 
   Loader2,
-  FileUp
+  FileUp,
+  XCircle,
+  RotateCcw,
+  StopCircle
 } from 'lucide-react';
 import { validateMediaFile, formatFileSize } from '../utils/fileValidation';
 import { uploadMediaFile } from '../services/uploadService';
@@ -21,6 +24,8 @@ export function UploadSection({ onUploadSuccess }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const isCancelledRef = useRef(false);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -86,14 +91,63 @@ export function UploadSection({ onUploadSuccess }) {
     });
   };
 
+  const handleCancelUpload = () => {
+    isCancelledRef.current = true;
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch (e) {}
+    }
+
+    setIsUploading(false);
+    setFilesQueue((prev) =>
+      prev.map((item) =>
+        item.status === 'uploading'
+          ? { ...item, status: 'pending', progress: 0 }
+          : item
+      )
+    );
+
+    toast('Upload cancelled.', {
+      icon: '⏹️',
+      duration: 3500
+    });
+  };
+
+  const handleRetryFailed = () => {
+    setFilesQueue((prev) =>
+      prev.map((item) =>
+        item.status === 'failed'
+          ? { ...item, status: 'pending', progress: 0, errorMessage: null }
+          : item
+      )
+    );
+    // Trigger upload on next tick
+    setTimeout(() => {
+      handleUploadAll();
+    }, 50);
+  };
+
+  const handleClearAll = () => {
+    filesQueue.forEach((item) => {
+      if (item.previewUrl) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
+      }
+    });
+    setFilesQueue([]);
+    setOverallProgress(0);
+  };
+
   const handleUploadAll = async () => {
-    if (filesQueue.length === 0) {
+    const queueToProcess = filesQueue.filter((item) => item.status !== 'completed');
+    if (queueToProcess.length === 0) {
       toast.error('Please select at least one photo to upload.');
       return;
     }
 
+    isCancelledRef.current = false;
+    abortControllerRef.current = new AbortController();
     setIsUploading(true);
-    setOverallProgress(0);
 
     // Request wake lock to prevent mobile screen sleep during multi-photo upload
     let wakeLock = null;
@@ -106,29 +160,36 @@ export function UploadSection({ onUploadSuccess }) {
     }
 
     const totalFiles = filesQueue.length;
-    let completedCount = 0;
+    let completedCount = filesQueue.filter((item) => item.status === 'completed').length;
     let failedCount = 0;
+    let wasCancelled = false;
 
     try {
       for (let i = 0; i < totalFiles; i++) {
+        if (isCancelledRef.current || abortControllerRef.current?.signal.aborted) {
+          wasCancelled = true;
+          break;
+        }
+
         const currentItem = filesQueue[i];
         if (currentItem.status === 'completed') {
-          completedCount++;
           continue;
         }
 
         setFilesQueue((prev) => {
           const copy = [...prev];
-          copy[i] = { ...copy[i], status: 'uploading', progress: 10 };
+          copy[i] = { ...copy[i], status: 'uploading', progress: 10, errorMessage: null };
           return copy;
         });
 
         try {
           const uploadedRecord = await uploadMediaFile(currentItem.file, {
+            signal: abortControllerRef.current.signal,
             onProgress: (percent) => {
+              if (isCancelledRef.current || abortControllerRef.current?.signal.aborted) return;
               setFilesQueue((prev) => {
                 const copy = [...prev];
-                copy[i] = { ...copy[i], progress: percent };
+                if (copy[i]) copy[i] = { ...copy[i], progress: percent };
                 return copy;
               });
               const baseProgress = (completedCount / totalFiles) * 100;
@@ -144,7 +205,7 @@ export function UploadSection({ onUploadSuccess }) {
 
           setFilesQueue((prev) => {
             const copy = [...prev];
-            copy[i] = { ...copy[i], status: 'completed', progress: 100 };
+            if (copy[i]) copy[i] = { ...copy[i], status: 'completed', progress: 100 };
             return copy;
           });
 
@@ -153,16 +214,34 @@ export function UploadSection({ onUploadSuccess }) {
             onUploadSuccess(uploadedRecord);
           }
         } catch (err) {
+          if (isCancelledRef.current || abortControllerRef.current?.signal.aborted || err?.name === 'AbortError') {
+            wasCancelled = true;
+            setFilesQueue((prev) => {
+              const copy = [...prev];
+              if (copy[i]) copy[i] = { ...copy[i], status: 'pending', progress: 0 };
+              return copy;
+            });
+            break;
+          }
+
           failedCount++;
           setFilesQueue((prev) => {
             const copy = [...prev];
-            copy[i] = {
-              ...copy[i],
-              status: 'failed',
-              errorMessage: err.message || 'Upload failed'
-            };
+            if (copy[i]) {
+              copy[i] = {
+                ...copy[i],
+                status: 'failed',
+                errorMessage: err.message || 'Upload failed'
+              };
+            }
             return copy;
           });
+
+          // PAUSE upload immediately on first error so user has Cancel / Retry option
+          toast.error(`Upload paused: "${currentItem.name}" failed. Tap "Cancel" or "Retry".`, {
+            duration: 6000
+          });
+          break; // Stop immediately to give user control!
         }
       }
     } finally {
@@ -172,19 +251,29 @@ export function UploadSection({ onUploadSuccess }) {
       setIsUploading(false);
     }
 
-    if (failedCount === 0) {
-      toast.success('All photos uploaded successfully! Thank you for sharing.', {
-        icon: '✨',
-        duration: 4000
-      });
-      setTimeout(() => {
-        setFilesQueue([]);
-        setOverallProgress(0);
-      }, 1200);
-    } else {
-      toast.error(`${failedCount} photo(s) had a network interruption. Tap "Retry Failed" to finish.`);
+    if (wasCancelled) {
+      return;
     }
+
+    // Check final status
+    setFilesQueue((currentQueue) => {
+      const allCompleted = currentQueue.length > 0 && currentQueue.every((item) => item.status === 'completed');
+      if (allCompleted && failedCount === 0) {
+        toast.success('All photos uploaded successfully! Thank you for sharing.', {
+          icon: '✨',
+          duration: 4000
+        });
+        setTimeout(() => {
+          handleClearAll();
+        }, 1500);
+      }
+      return currentQueue;
+    });
   };
+
+  const failedItems = filesQueue.filter((item) => item.status === 'failed');
+  const pendingItems = filesQueue.filter((item) => item.status === 'pending');
+  const completedItems = filesQueue.filter((item) => item.status === 'completed');
 
   return (
     <section id="upload" className="py-16 sm:py-20 relative bg-royal-cream/60 w-full max-w-full overflow-hidden">
@@ -248,10 +337,24 @@ export function UploadSection({ onUploadSuccess }) {
               <div className="flex items-center justify-between mb-3">
                 <span className="font-serif text-base font-semibold text-royal-espresso">
                   Selected Photos ({filesQueue.length})
+                  {completedItems.length > 0 && (
+                    <span className="ml-2 text-xs font-sans text-green-700 font-normal">
+                      ({completedItems.length} uploaded)
+                    </span>
+                  )}
                 </span>
-                {!isUploading && (
+                
+                {isUploading ? (
                   <button
-                    onClick={() => setFilesQueue([])}
+                    onClick={handleCancelUpload}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200 text-xs font-sans font-semibold transition"
+                  >
+                    <StopCircle className="w-3.5 h-3.5" />
+                    Cancel Upload
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleClearAll}
                     className="text-xs text-red-600 hover:text-red-700 font-sans underline"
                   >
                     Clear all
@@ -279,7 +382,7 @@ export function UploadSection({ onUploadSuccess }) {
 
                     {/* Status Overlays */}
                     {item.status === 'uploading' && (
-                      <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white p-2">
+                      <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white p-2 text-center">
                         <Loader2 className="w-5 h-5 text-gold-400 animate-spin mb-1" />
                         <span className="text-[10px] font-semibold">{item.progress}%</span>
                       </div>
@@ -292,18 +395,19 @@ export function UploadSection({ onUploadSuccess }) {
                     )}
 
                     {item.status === 'failed' && (
-                      <div className="absolute inset-0 bg-red-700/80 flex flex-col items-center justify-center text-white p-1 text-center">
+                      <div className="absolute inset-0 bg-red-700/85 flex flex-col items-center justify-center text-white p-1 text-center">
                         <AlertCircle className="w-5 h-5 text-white mb-0.5" />
-                        <span className="text-[8px] leading-tight">Failed</span>
+                        <span className="text-[9px] leading-tight font-medium">Failed</span>
                       </div>
                     )}
 
-                    {/* Remove button */}
-                    {!isUploading && item.status === 'pending' && (
+                    {/* Remove button (allowed when not uploading for pending or failed files) */}
+                    {!isUploading && item.status !== 'completed' && (
                       <button
                         onClick={() => removeFileFromQueue(index)}
                         className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white hover:bg-red-600 transition"
                         aria-label="Remove photo"
+                        title="Remove photo"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -312,14 +416,49 @@ export function UploadSection({ onUploadSuccess }) {
                 ))}
               </div>
 
+              {/* Pause on Error Banner */}
+              {failedItems.length > 0 && !isUploading && (
+                <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+                    <div>
+                      <p className="text-xs sm:text-sm font-semibold">
+                        Upload paused: {failedItems.length} {failedItems.length === 1 ? 'photo' : 'photos'} had an interruption
+                      </p>
+                      <p className="text-[11px] text-amber-800/80">
+                        You can retry failed photos, resume pending ones, or cancel and clear.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={handleRetryFailed}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold flex items-center gap-1 shadow-sm transition"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      Retry Failed
+                    </button>
+                    <button
+                      onClick={handleClearAll}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 text-xs font-semibold transition"
+                    >
+                      Cancel &amp; Clear
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Overall Progress Bar */}
               {isUploading && (
-                <div className="mb-4 space-y-2">
+                <div className="mb-4 space-y-2 p-3 bg-gold-50/70 rounded-xl border border-gold-200">
                   <div className="flex items-center justify-between text-xs font-sans text-royal-espresso">
-                    <span>Uploading photos to album...</span>
-                    <span className="font-semibold text-gold-700">{overallProgress}%</span>
+                    <span className="font-medium flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 text-gold-600 animate-spin" />
+                      Uploading photos to gallery...
+                    </span>
+                    <span className="font-bold text-gold-700">{overallProgress}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-gold-100 overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-gold-200/80 overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-gold-500 to-gold-600 transition-all duration-300"
                       style={{ width: `${overallProgress}%` }}
@@ -328,35 +467,41 @@ export function UploadSection({ onUploadSuccess }) {
                 </div>
               )}
 
-              {/* Direct Upload & Retry Buttons */}
+              {/* Action Buttons: Cancel Upload vs Upload Now */}
               <div className="flex flex-wrap items-center justify-end gap-2.5">
-                {filesQueue.some((item) => item.status === 'failed') && !isUploading && (
+                {isUploading ? (
                   <button
-                    onClick={handleUploadAll}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-1.5"
+                    onClick={handleCancelUpload}
+                    className="w-full sm:w-auto px-6 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Retry Failed ({filesQueue.filter((item) => item.status === 'failed').length})</span>
+                    <XCircle className="w-4 h-4" />
+                    <span>Cancel Upload</span>
                   </button>
-                )}
+                ) : (
+                  <>
+                    {failedItems.length > 0 && (
+                      <button
+                        onClick={handleRetryFailed}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Retry Failed ({failedItems.length})</span>
+                      </button>
+                    )}
 
-                <button
-                  onClick={handleUploadAll}
-                  disabled={isUploading}
-                  className="w-full sm:w-auto px-7 py-3 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all flex items-center justify-center gap-2"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Uploading...</span>
-                    </>
-                  ) : (
-                    <>
+                    <button
+                      onClick={handleUploadAll}
+                      disabled={pendingItems.length === 0 && failedItems.length === 0}
+                      className="w-full sm:w-auto px-7 py-3 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-royal hover:shadow-royal-lg transition-all flex items-center justify-center gap-2"
+                    >
                       <FileUp className="w-4 h-4" />
-                      <span>Upload {filesQueue.length} {filesQueue.length === 1 ? 'Photo' : 'Photos'} Now</span>
-                    </>
-                  )}
-                </button>
+                      <span>
+                        Upload {pendingItems.length > 0 ? `${pendingItems.length} ` : ''}
+                        {(pendingItems.length === 1 || filesQueue.length === 1) ? 'Photo' : 'Photos'} Now
+                      </span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
