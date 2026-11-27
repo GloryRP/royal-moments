@@ -21,7 +21,6 @@ export function PhotoCard({
   isSelectMode,
   isSelected,
   onToggleSelect,
-  onLongPress,
   isReorderMode = false,
   reorderIndex = 0,
   canMoveEarlier = false,
@@ -39,82 +38,9 @@ export function PhotoCard({
   const [hasError, setHasError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Long-press detection (Mobile touch & Desktop click-and-hold)
-  const timerRef = useRef(null);
-  const isLongPressRef = useRef(false);
-  const startCoordRef = useRef({ x: 0, y: 0 });
-
-  const startLongPressTimer = (x, y) => {
-    if (isReorderMode) return;
-    isLongPressRef.current = false;
-    startCoordRef.current = { x, y };
-    timerRef.current = setTimeout(() => {
-      isLongPressRef.current = true;
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try { navigator.vibrate(50); } catch (e) {}
-      }
-      if (onLongPress) {
-        onLongPress(item.id);
-      }
-    }, 450);
-  };
-
-  const cancelLongPressTimer = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const handleTouchStart = (e) => {
-    if (isReorderMode) return;
-    if (e.target.closest('.action-button') || e.target.closest('.menu-container')) return;
-    const touch = e.touches[0];
-    startLongPressTimer(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchMove = (e) => {
-    if (!timerRef.current) return;
-    const touch = e.touches[0];
-    const dx = Math.abs(touch.clientX - startCoordRef.current.x);
-    const dy = Math.abs(touch.clientY - startCoordRef.current.y);
-    if (dx > 10 || dy > 10) {
-      cancelLongPressTimer(); // User is scrolling
-    }
-  };
-
-  const handleTouchEnd = () => {
-    cancelLongPressTimer();
-  };
-
-  const handleMouseDown = (e) => {
-    if (isReorderMode) return;
-    if (e.button !== 0) return;
-    if (e.target.closest('.action-button') || e.target.closest('.menu-container')) return;
-    startLongPressTimer(e.clientX, e.clientY);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!timerRef.current) return;
-    const dx = Math.abs(e.clientX - startCoordRef.current.x);
-    const dy = Math.abs(e.clientY - startCoordRef.current.y);
-    if (dx > 10 || dy > 10) {
-      cancelLongPressTimer();
-    }
-  };
-
-  const handleMouseUp = () => {
-    cancelLongPressTimer();
-  };
-
   const handleCardClick = (e) => {
     if (isReorderMode) {
       return; // Lightbox disabled in reorder mode
-    }
-    if (isLongPressRef.current) {
-      e.stopPropagation();
-      isLongPressRef.current = false;
-      return;
     }
     if (isSelectMode) {
       onToggleSelect(item.id);
@@ -133,13 +59,6 @@ export function PhotoCard({
       onDrop={isReorderMode ? (e) => onDrop && onDrop(e, item.id) : undefined}
       onDragEnd={isReorderMode ? onDragEnd : undefined}
       onClick={handleCardClick}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       className={`group relative overflow-hidden bg-royal-sand/20 select-none w-full rounded-sm transition-all duration-150 ${
         isReorderMode
           ? 'cursor-grab active:cursor-grabbing border-2 border-gold-400 shadow-md'

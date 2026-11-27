@@ -125,22 +125,6 @@ export function Gallery({
     });
   };
 
-  // Long-press activates select mode and adds target photo immediately
-  const handleLongPress = (id) => {
-    if (isReorderMode) return;
-    setIsSelectMode(true);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-    toast.success('Select mode active — tap photos to choose', {
-      id: 'select-mode-toast',
-      icon: '☑️',
-      duration: 2500
-    });
-  };
-
   const handleSelectAll = () => {
     if (selectedIds.size === items.length) {
       setSelectedIds(new Set());
@@ -488,7 +472,6 @@ export function Gallery({
                     isSelectMode={isSelectMode}
                     isSelected={selectedIds.has(item.id)}
                     onToggleSelect={handleToggleSelect}
-                    onLongPress={handleLongPress}
                     isReorderMode={isReorderMode}
                     reorderIndex={index}
                     canMoveEarlier={index > 0}
