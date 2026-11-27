@@ -109,14 +109,16 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpe
 
           {/* Right Action: Install App & Download Album Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <button
-              onClick={onOpenInstall}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-gold-300 bg-white/90 text-royal-espresso text-xs font-semibold tracking-wider uppercase hover:border-gold-500 hover:text-gold-800 shadow-xs transition-all duration-200"
-              title="Install App to Desktop / Home Screen"
-            >
-              <ArrowDownToLine className="w-3.5 h-3.5 text-gold-700" />
-              <span>{isInstalled ? 'App Ready' : 'Install App'}</span>
-            </button>
+            {!isInstalled && (
+              <button
+                onClick={onOpenInstall}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-gold-300 bg-white/90 text-royal-espresso text-xs font-semibold tracking-wider uppercase hover:border-gold-500 hover:text-gold-800 shadow-xs transition-all duration-200"
+                title="Install App to Desktop / Home Screen"
+              >
+                <ArrowDownToLine className="w-3.5 h-3.5 text-gold-700" />
+                <span>Install App</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenDownload}
@@ -129,15 +131,17 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpe
 
           {/* Mobile Actions: Install App Icon, Favourites, Hamburger */}
           <div className="flex md:hidden items-center space-x-2">
-            <button
-              onClick={onOpenInstall}
-              className="px-2.5 py-1.5 rounded-full bg-gold-100/90 hover:bg-gold-200 text-gold-900 border border-gold-300 flex items-center gap-1 transition shadow-xs"
-              title="Install App"
-              aria-label="Install App"
-            >
-              <ArrowDownToLine className="w-3.5 h-3.5 text-gold-700" />
-              <span className="text-[11px] font-sans font-semibold">Install App</span>
-            </button>
+            {!isInstalled && (
+              <button
+                onClick={onOpenInstall}
+                className="px-2.5 py-1.5 rounded-full bg-gold-100/90 hover:bg-gold-200 text-gold-900 border border-gold-300 flex items-center gap-1 transition shadow-xs"
+                title="Install App"
+                aria-label="Install App"
+              >
+                <ArrowDownToLine className="w-3.5 h-3.5 text-gold-700" />
+                <span className="text-[11px] font-sans font-semibold">Install App</span>
+              </button>
+            )}
 
             <button
               onClick={handleNavFavourites}
@@ -201,16 +205,18 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpe
             </span>
           </button>
           <div className="pt-2 border-t border-gold-100 space-y-2">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenInstall();
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-white text-royal-espresso border border-gold-300 font-sans text-xs uppercase tracking-widest font-semibold shadow-xs active:scale-95 transition-all"
-            >
-              <ArrowDownToLine className="w-4 h-4 text-gold-700" />
-              <span>Install App on Phone</span>
-            </button>
+            {!isInstalled && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenInstall();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-white text-royal-espresso border border-gold-300 font-sans text-xs uppercase tracking-widest font-semibold shadow-xs active:scale-95 transition-all"
+              >
+                <ArrowDownToLine className="w-4 h-4 text-gold-700" />
+                <span>Install App on Phone</span>
+              </button>
+            )}
 
             <button
               onClick={() => {

@@ -54,7 +54,12 @@ export function App() {
   // PWA Install state
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator?.standalone === true;
+    const isStored = localStorage.getItem('royal_moments_app_installed') === 'true';
+    return Boolean(isStandalone || isStored);
+  });
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -65,14 +70,30 @@ export function App() {
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      try {
+        localStorage.setItem('royal_moments_app_installed', 'true');
+      } catch (e) {}
     };
 
     if (typeof window !== 'undefined') {
-      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator?.standalone) {
         setIsInstalled(true);
       }
       window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.addEventListener('appinstalled', handleAppInstalled);
+
+      const mql = window.matchMedia('(display-mode: standalone)');
+      const handleModeChange = (e) => {
+        if (e.matches) {
+          setIsInstalled(true);
+          try {
+            localStorage.setItem('royal_moments_app_installed', 'true');
+          } catch (err) {}
+        }
+      };
+      if (mql?.addEventListener) {
+        mql.addEventListener('change', handleModeChange);
+      }
     }
 
     return () => {
@@ -90,9 +111,24 @@ export function App() {
       if (choice.outcome === 'accepted') {
         setIsInstalled(true);
         setIsInstallModalOpen(false);
+        try {
+          localStorage.setItem('royal_moments_app_installed', 'true');
+        } catch (e) {}
       }
       setDeferredPrompt(null);
     }
+  };
+
+  const handleMarkInstalled = () => {
+    setIsInstalled(true);
+    setIsInstallModalOpen(false);
+    try {
+      localStorage.setItem('royal_moments_app_installed', 'true');
+    } catch (e) {}
+    toast.success('App saved! The install icon has been removed from the menu.', {
+      icon: '📱',
+      duration: 3500
+    });
   };
 
   // Envelope open/close handlers with history state
@@ -280,6 +316,7 @@ export function App() {
         onClose={() => setIsInstallModalOpen(false)}
         deferredPrompt={deferredPrompt}
         onPromptInstall={handlePromptInstall}
+        onMarkInstalled={handleMarkInstalled}
         isInstalled={isInstalled}
       />
 

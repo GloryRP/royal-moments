@@ -8,9 +8,7 @@ import {
   CheckSquare, 
   Download, 
   Loader2, 
-  Play,
-  Grid2X2,
-  Grid3X3
+  Play
 } from 'lucide-react';
 import { PhotoCard } from './PhotoCard';
 import { downloadAlbumZip } from '../services/downloadService';
@@ -40,10 +38,14 @@ export function Gallery({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
-  const [mobileCols, setMobileCols] = useState(2); // Default to 2 columns on mobile for perfect 2x2 symmetry
-  const [screenSize, setScreenSize] = useState('mobile');
+  const [screenSize, setScreenSize] = useState(() => {
+    if (typeof window === 'undefined') return 'mobile';
+    if (window.innerWidth >= 1024) return 'desktop';
+    if (window.innerWidth >= 640) return 'tablet';
+    return 'mobile';
+  });
 
-  // Track window size for responsive grid columns
+  // Track window size for responsive grid columns (strictly 2 columns on mobile)
   useEffect(() => {
     const handleResize = () => {
       if (typeof window === 'undefined') return;
@@ -60,11 +62,16 @@ export function Gallery({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const columnClass = screenSize === 'mobile'
-    ? (mobileCols === 3 ? 'columns-3' : 'columns-2')
-    : screenSize === 'tablet'
-    ? 'columns-3'
-    : 'columns-4';
+  // Number of columns: strictly 2 on mobile, 3 on tablet, 4 on desktop
+  const numColumns = screenSize === 'mobile' ? 2 : screenSize === 'tablet' ? 3 : 4;
+  const gridColsClass = numColumns === 2 ? 'grid-cols-2' : numColumns === 3 ? 'grid-cols-3' : 'grid-cols-4';
+
+  // Distribute items row-wise across columns (e.g. 2 cols -> Col 0 gets 1, 3, 5; Col 1 gets 2, 4, 6)
+  // This guarantees horizontal order: [1] [2], then [3] [4], then [5] [6], etc.
+  const columnBuckets = Array.from({ length: numColumns }, () => []);
+  items.forEach((item, index) => {
+    columnBuckets[index % numColumns].push(item);
+  });
 
   const scrollToUpload = () => {
     const el = document.getElementById('upload');
@@ -189,29 +196,8 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Grid Toggle (mobile), Slideshow, Select Photos, Sort Order & Refresh */}
+          {/* Right Controls: Slideshow, Select Photos, Sort Order & Refresh */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-            {/* Mobile Grid Density Toggle (2 cols vs 3 cols) */}
-            {screenSize === 'mobile' && items.length > 0 && (
-              <button
-                onClick={() => setMobileCols(mobileCols === 2 ? 3 : 2)}
-                className="px-2.5 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400"
-                title={mobileCols === 2 ? 'Switch to 3 columns' : 'Switch to 2 columns'}
-              >
-                {mobileCols === 2 ? (
-                  <>
-                    <Grid3X3 className="w-3.5 h-3.5 text-gold-700" />
-                    <span>3 Cols</span>
-                  </>
-                ) : (
-                  <>
-                    <Grid2X2 className="w-3.5 h-3.5 text-gold-700" />
-                    <span>2 Cols</span>
-                  </>
-                )}
-              </button>
-            )}
-
             {/* Play Slideshow Button */}
             {items.length > 0 && !isSelectMode && (
               <button
@@ -268,11 +254,11 @@ export function Gallery({
 
         {/* Loading Skeleton */}
         {isLoading && (
-          <div className={`w-full ${columnClass} gap-1.5 sm:gap-2.5 space-y-1.5 sm:space-y-2.5`}>
+          <div className={`w-full grid ${gridColsClass} gap-1.5 sm:gap-2.5 items-start`}>
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="w-full h-64 bg-royal-sand/30 rounded-sm animate-pulse break-inside-avoid"
+                className="w-full h-64 bg-royal-sand/30 rounded-sm animate-pulse"
               />
             ))}
           </div>
@@ -312,27 +298,27 @@ export function Gallery({
           </div>
         )}
 
-        {/* Populated Gallery: Luxury Masonry Gallery (100% Complete Photos - Zero Cropping / Zero Expansion) */}
+        {/* Populated Gallery: Row-wise order (1 2 / 3 4 / 5 6 ...) with 100% complete natural photos */}
         {!isLoading && items.length > 0 && (
-          <div className={`w-full ${columnClass} gap-1.5 sm:gap-2.5 space-y-1.5 sm:space-y-2.5`}>
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="break-inside-avoid w-full"
-              >
-                <PhotoCard
-                  item={item}
-                  isFavourited={isFavourited(item.id)}
-                  favouriteCount={getFavouriteCount(item.id)}
-                  onToggleFavourite={onToggleFavourite}
-                  onOpenLightbox={onOpenLightbox}
-                  onDownload={onDownload}
-                  onRequestDelete={onRequestDelete}
-                  isSelectMode={isSelectMode}
-                  isSelected={selectedIds.has(item.id)}
-                  onToggleSelect={handleToggleSelect}
-                  onLongPress={handleLongPress}
-                />
+          <div className={`w-full grid ${gridColsClass} gap-1.5 sm:gap-2.5 items-start`}>
+            {columnBuckets.map((colItems, colIdx) => (
+              <div key={colIdx} className="flex flex-col gap-1.5 sm:gap-2.5 w-full">
+                {colItems.map((item) => (
+                  <PhotoCard
+                    key={item.id}
+                    item={item}
+                    isFavourited={isFavourited(item.id)}
+                    favouriteCount={getFavouriteCount(item.id)}
+                    onToggleFavourite={onToggleFavourite}
+                    onOpenLightbox={onOpenLightbox}
+                    onDownload={onDownload}
+                    onRequestDelete={onRequestDelete}
+                    isSelectMode={isSelectMode}
+                    isSelected={selectedIds.has(item.id)}
+                    onToggleSelect={handleToggleSelect}
+                    onLongPress={handleLongPress}
+                  />
+                ))}
               </div>
             ))}
           </div>
