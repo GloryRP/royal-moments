@@ -51,6 +51,7 @@ export function App() {
   // Delete modal state
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   // PWA Install state
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -263,6 +264,7 @@ export function App() {
           onNavigateFilter={(targetFilter) => setFilter(targetFilter)}
           onOpenInstall={() => setIsInstallModalOpen(true)}
           isInstalled={isInstalled}
+          onStartReorder={() => setIsReorderMode(true)}
         />
       )}
 
@@ -297,6 +299,8 @@ export function App() {
               onRequestDelete={handleRequestDelete}
               onRefresh={refreshGallery}
               onReorderMedia={reorderMedia}
+              isReorderMode={isReorderMode}
+              setIsReorderMode={setIsReorderMode}
             />
 
             <UploadSection onUploadSuccess={handleUploadSuccess} />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Upload, Download, Menu, X, Sparkles, Camera, ArrowDownToLine } from 'lucide-react';
+import { Heart, Upload, Download, Menu, X, Sparkles, Camera, ArrowDownToLine, ArrowLeftRight } from 'lucide-react';
 import { siteConfig } from '../config/siteConfig';
 
-export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpenInstall, isInstalled }) {
+export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpenInstall, isInstalled, onStartReorder }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -105,6 +105,17 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpe
                 </span>
               )}
             </button>
+            <button
+              onClick={() => {
+                if (onStartReorder) onStartReorder();
+                scrollTo('gallery');
+              }}
+              className="font-sans text-xs tracking-wider text-royal-espresso/70 hover:text-gold-700 transition-colors flex items-center gap-1.5 border border-gold-200/80 px-2.5 py-1 rounded-full bg-white/60 hover:bg-gold-50"
+              title="Organize photo positions"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-gold-600" />
+              <span>Reorder</span>
+            </button>
           </nav>
 
           {/* Right Action: Install App & Download Album Buttons */}
@@ -203,6 +214,17 @@ export function Navbar({ favouriteCount, onOpenDownload, onNavigateFilter, onOpe
             <span className="text-xs bg-gold-100 text-gold-800 px-2.5 py-0.5 rounded-full font-sans font-semibold">
               {favouriteCount}
             </span>
+          </button>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              if (onStartReorder) onStartReorder();
+              scrollTo('gallery');
+            }}
+            className="flex items-center gap-2 w-full text-left font-serif text-lg text-royal-espresso hover:text-gold-700 py-1"
+          >
+            <ArrowLeftRight className="w-4 h-4 text-gold-600" />
+            <span>Reorder Photos</span>
           </button>
           <div className="pt-2 border-t border-gold-100 space-y-2">
             {!isInstalled && (

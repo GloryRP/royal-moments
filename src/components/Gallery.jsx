@@ -38,7 +38,9 @@ export function Gallery({
   onDownload,
   onRequestDelete,
   onRefresh,
-  onReorderMedia
+  onReorderMedia,
+  isReorderMode = false,
+  setIsReorderMode
 }) {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -46,11 +48,28 @@ export function Gallery({
   const [downloadProgress, setDownloadProgress] = useState(null);
 
   // Reorder State
-  const [isReorderMode, setIsReorderMode] = useState(false);
   const [reorderList, setReorderList] = useState([]);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
+
+  // Initialize reorderList when Reorder mode is triggered from navbar
+  useEffect(() => {
+    if (isReorderMode) {
+      if (filter !== 'all') {
+        setFilter('all');
+      }
+      setIsSelectMode(false);
+      setSelectedIds(new Set());
+      setReorderList([...items]);
+      toast('Reorder mode active: Drag photos or tap Earlier / Later', {
+        icon: '🔀',
+        duration: 3500
+      });
+      const el = document.getElementById('gallery');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isReorderMode]);
 
   const [screenSize, setScreenSize] = useState(() => {
     if (typeof window === 'undefined') return 'mobile';
@@ -173,7 +192,7 @@ export function Gallery({
   };
 
   const handleCancelReorder = () => {
-    setIsReorderMode(false);
+    if (setIsReorderMode) setIsReorderMode(false);
     setReorderList([]);
     setDraggedId(null);
     setDragOverId(null);
@@ -228,7 +247,7 @@ export function Gallery({
       if (onReorderMedia) {
         onReorderMedia(reorderList);
       }
-      setIsReorderMode(false);
+      if (setIsReorderMode) setIsReorderMode(false);
       setReorderList([]);
       toast.success('Gallery order saved successfully! ✨', {
         duration: 4000
@@ -298,20 +317,8 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Reorder, Slideshow, Select Photos, Sort Order & Refresh */}
+          {/* Right Controls: Slideshow, Select Photos, Sort Order & Refresh */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-            {/* Reorder Button */}
-            {items.length > 1 && !isSelectMode && !isReorderMode && (
-              <button
-                onClick={handleStartReorder}
-                className="px-3 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm cursor-pointer"
-                title="Drag and reorder photo positions"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-gold-600" />
-                <span>Reorder</span>
-              </button>
-            )}
-
             {/* Play Slideshow Button */}
             {items.length > 0 && !isSelectMode && !isReorderMode && (
               <button
