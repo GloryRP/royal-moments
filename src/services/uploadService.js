@@ -56,7 +56,7 @@ export async function uploadMediaFile(file, options = {}) {
   // Strategy 1: Direct Supabase Storage REST API upload with real-time XHR progress
   // (Fastest, zero-latency direct upload directly from client to Supabase Storage)
   try {
-    const record = await uploadWithRetry(() => uploadDirectWithXhr(storagePath, file, mimeType, onProgress), 2);
+    const record = await uploadWithRetry(() => uploadDirectWithXhr(storagePath, file, mimeType, onProgress), 3);
     return record;
   } catch (directXhrErr) {
     console.warn('Direct XHR upload attempt failed, trying Supabase SDK upload:', directXhrErr);
@@ -77,7 +77,7 @@ export async function uploadMediaFile(file, options = {}) {
 /**
  * Executes an async upload function with automatic retry on transient failure
  */
-async function uploadWithRetry(uploadFn, maxAttempts = 2) {
+async function uploadWithRetry(uploadFn, maxAttempts = 3) {
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -85,8 +85,8 @@ async function uploadWithRetry(uploadFn, maxAttempts = 2) {
     } catch (err) {
       lastError = err;
       if (attempt < maxAttempts) {
-        // Wait 800ms before retrying transient mobile connection drop
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        // Wait 1.2s * attempt before retrying transient mobile connection drop
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1200));
       }
     }
   }

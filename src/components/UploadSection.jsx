@@ -95,66 +95,85 @@ export function UploadSection({ onUploadSuccess }) {
     setIsUploading(true);
     setOverallProgress(0);
 
+    // Request wake lock to prevent mobile screen sleep during multi-photo upload
+    let wakeLock = null;
+    try {
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) {
+      // Non-critical if wakeLock is denied or unsupported
+    }
+
     const totalFiles = filesQueue.length;
     let completedCount = 0;
     let failedCount = 0;
 
-    for (let i = 0; i < totalFiles; i++) {
-      const currentItem = filesQueue[i];
-      if (currentItem.status === 'completed') {
-        completedCount++;
-        continue;
-      }
-
-      setFilesQueue((prev) => {
-        const copy = [...prev];
-        copy[i] = { ...copy[i], status: 'uploading', progress: 10 };
-        return copy;
-      });
-
-      try {
-        const uploadedRecord = await uploadMediaFile(currentItem.file, {
-          onProgress: (percent) => {
-            setFilesQueue((prev) => {
-              const copy = [...prev];
-              copy[i] = { ...copy[i], progress: percent };
-              return copy;
-            });
-            const baseProgress = (completedCount / totalFiles) * 100;
-            const singleItemShare = (1 / totalFiles) * percent;
-            setOverallProgress(Math.min(100, Math.round(baseProgress + singleItemShare)));
-          }
-        });
-
-        setFilesQueue((prev) => {
-          const copy = [...prev];
-          copy[i] = { ...copy[i], status: 'completed', progress: 100 };
-          return copy;
-        });
-
-        completedCount++;
-        if (onUploadSuccess && uploadedRecord) {
-          onUploadSuccess(uploadedRecord);
+    try {
+      for (let i = 0; i < totalFiles; i++) {
+        const currentItem = filesQueue[i];
+        if (currentItem.status === 'completed') {
+          completedCount++;
+          continue;
         }
-      } catch (err) {
-        failedCount++;
+
         setFilesQueue((prev) => {
           const copy = [...prev];
-          copy[i] = {
-            ...copy[i],
-            status: 'failed',
-            errorMessage: err.message || 'Upload failed'
-          };
+          copy[i] = { ...copy[i], status: 'uploading', progress: 10 };
           return copy;
         });
-        toast.error(`"${currentItem.name}" failed: ${err.message}`);
+
+        try {
+          const uploadedRecord = await uploadMediaFile(currentItem.file, {
+            onProgress: (percent) => {
+              setFilesQueue((prev) => {
+                const copy = [...prev];
+                copy[i] = { ...copy[i], progress: percent };
+                return copy;
+              });
+              const baseProgress = (completedCount / totalFiles) * 100;
+              const singleItemShare = (1 / totalFiles) * percent;
+              setOverallProgress(Math.min(100, Math.round(baseProgress + singleItemShare)));
+            }
+          });
+
+          // Free memory
+          if (currentItem.previewUrl) {
+            try { URL.revokeObjectURL(currentItem.previewUrl); } catch (e) {}
+          }
+
+          setFilesQueue((prev) => {
+            const copy = [...prev];
+            copy[i] = { ...copy[i], status: 'completed', progress: 100 };
+            return copy;
+          });
+
+          completedCount++;
+          if (onUploadSuccess && uploadedRecord) {
+            onUploadSuccess(uploadedRecord);
+          }
+        } catch (err) {
+          failedCount++;
+          setFilesQueue((prev) => {
+            const copy = [...prev];
+            copy[i] = {
+              ...copy[i],
+              status: 'failed',
+              errorMessage: err.message || 'Upload failed'
+            };
+            return copy;
+          });
+        }
       }
+    } finally {
+      if (wakeLock) {
+        try { await wakeLock.release(); } catch (e) {}
+      }
+      setIsUploading(false);
     }
 
-    setIsUploading(false);
-
     if (failedCount === 0) {
-      toast.success('Photos uploaded successfully! Thank you for sharing.', {
+      toast.success('All photos uploaded successfully! Thank you for sharing.', {
         icon: '✨',
         duration: 4000
       });
@@ -163,7 +182,7 @@ export function UploadSection({ onUploadSuccess }) {
         setOverallProgress(0);
       }, 1200);
     } else {
-      toast.error(`${failedCount} photo(s) failed to upload.`);
+      toast.error(`${failedCount} photo(s) had a network interruption. Tap "Retry Failed" to finish.`);
     }
   };
 
@@ -309,8 +328,18 @@ export function UploadSection({ onUploadSuccess }) {
                 </div>
               )}
 
-              {/* Direct Upload Button */}
-              <div className="flex justify-end">
+              {/* Direct Upload & Retry Buttons */}
+              <div className="flex flex-wrap items-center justify-end gap-2.5">
+                {filesQueue.some((item) => item.status === 'failed') && !isUploading && (
+                  <button
+                    onClick={handleUploadAll}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-sans text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Retry Failed ({filesQueue.filter((item) => item.status === 'failed').length})</span>
+                  </button>
+                )}
+
                 <button
                   onClick={handleUploadAll}
                   disabled={isUploading}
