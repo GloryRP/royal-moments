@@ -38,7 +38,8 @@ export function App() {
     setSortOrder,
     refreshGallery,
     addMediaItem,
-    removeMediaItem
+    removeMediaItem,
+    reorderMedia
   } = useGallery(favouritesSet);
 
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
@@ -295,6 +296,7 @@ export function App() {
               onDownload={handleDownloadIndividual}
               onRequestDelete={handleRequestDelete}
               onRefresh={refreshGallery}
+              onReorderMedia={reorderMedia}
             />
 
             <UploadSection onUploadSuccess={handleUploadSuccess} />

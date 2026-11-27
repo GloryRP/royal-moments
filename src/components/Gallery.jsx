@@ -8,10 +8,15 @@ import {
   CheckSquare, 
   Download, 
   Loader2, 
-  Play
+  Play,
+  ArrowLeftRight,
+  GripVertical,
+  Save,
+  X
 } from 'lucide-react';
 import { PhotoCard } from './PhotoCard';
 import { downloadAlbumZip } from '../services/downloadService';
+import { saveMediaOrder } from '../services/mediaService';
 import { siteConfig } from '../config/siteConfig';
 import toast from 'react-hot-toast';
 
@@ -32,12 +37,21 @@ export function Gallery({
   onStartSlideshow,
   onDownload,
   onRequestDelete,
-  onRefresh
+  onRefresh,
+  onReorderMedia
 }) {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(null);
+
+  // Reorder State
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderList, setReorderList] = useState([]);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+
   const [screenSize, setScreenSize] = useState(() => {
     if (typeof window === 'undefined') return 'mobile';
     if (window.innerWidth >= 1024) return 'desktop';
@@ -66,11 +80,13 @@ export function Gallery({
   const numColumns = screenSize === 'mobile' ? 2 : screenSize === 'tablet' ? 3 : 4;
   const gridColsClass = numColumns === 2 ? 'grid-cols-2' : numColumns === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
+  const activeItems = isReorderMode ? reorderList : items;
+
   // Distribute items row-wise across columns (e.g. 2 cols -> Col 0 gets 1, 3, 5; Col 1 gets 2, 4, 6)
   // This guarantees horizontal order: [1] [2], then [3] [4], then [5] [6], etc.
   const columnBuckets = Array.from({ length: numColumns }, () => []);
-  items.forEach((item, index) => {
-    columnBuckets[index % numColumns].push(item);
+  activeItems.forEach((item, index) => {
+    columnBuckets[index % numColumns].push({ item, index });
   });
 
   const scrollToUpload = () => {
@@ -92,6 +108,7 @@ export function Gallery({
 
   // Long-press activates select mode and adds target photo immediately
   const handleLongPress = (id) => {
+    if (isReorderMode) return;
     setIsSelectMode(true);
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -140,6 +157,89 @@ export function Gallery({
     }
   };
 
+  // Reorder Handlers
+  const handleStartReorder = () => {
+    if (filter !== 'all') {
+      setFilter('all');
+    }
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+    setReorderList([...items]);
+    setIsReorderMode(true);
+    toast('Reorder mode: Drag photos or tap Earlier / Later buttons', {
+      icon: '🔀',
+      duration: 3500
+    });
+  };
+
+  const handleCancelReorder = () => {
+    setIsReorderMode(false);
+    setReorderList([]);
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleMoveItem = (fromIndex, toIndex) => {
+    if (fromIndex < 0 || fromIndex >= reorderList.length || toIndex < 0 || toIndex >= reorderList.length) return;
+    setReorderList((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  };
+
+  const handleDragStart = (e, id) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedId(id);
+  };
+
+  const handleDragOver = (e, id) => {
+    e.preventDefault();
+    if (dragOverId !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
+    if (sourceId && sourceId !== targetId) {
+      const fromIdx = reorderList.findIndex((i) => i.id === sourceId);
+      const toIdx = reorderList.findIndex((i) => i.id === targetId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        handleMoveItem(fromIdx, toIdx);
+      }
+    }
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleSaveReorder = async () => {
+    setIsSavingOrder(true);
+    try {
+      const orderedIds = reorderList.map((item) => item.id);
+      await saveMediaOrder(orderedIds);
+      if (onReorderMedia) {
+        onReorderMedia(reorderList);
+      }
+      setIsReorderMode(false);
+      setReorderList([]);
+      toast.success('Gallery order saved successfully! ✨', {
+        duration: 4000
+      });
+    } catch (err) {
+      toast.error(`Failed to save order: ${err.message}`);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
   return (
     <section id="gallery" className="py-14 sm:py-20 relative bg-royal-ivory pb-28 w-full max-w-full overflow-hidden">
       <div className="w-full max-w-full mx-auto px-1 sm:px-3 md:px-4">
@@ -166,11 +266,12 @@ export function Gallery({
                 setFilter('all');
                 if (isSelectMode) setSelectedIds(new Set());
               }}
+              disabled={isReorderMode}
               className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all ${
                 filter === 'all'
                   ? 'bg-gold-600 text-white shadow-sm'
                   : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
-              }`}
+              } ${isReorderMode ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               All Photos
             </button>
@@ -180,11 +281,12 @@ export function Gallery({
                 setFilter('favourites');
                 if (isSelectMode) setSelectedIds(new Set());
               }}
+              disabled={isReorderMode}
               className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-sans font-medium tracking-wide transition-all flex items-center gap-1.5 ${
                 filter === 'favourites'
                   ? 'bg-gold-600 text-white shadow-sm'
                   : 'bg-white text-royal-espresso/80 border border-gold-200 hover:border-gold-400'
-              }`}
+              } ${isReorderMode ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Heart className={`w-3.5 h-3.5 ${favouriteCount > 0 ? 'fill-gold-500 text-gold-600' : ''}`} />
               Favourites
@@ -196,10 +298,22 @@ export function Gallery({
             </button>
           </div>
 
-          {/* Right Controls: Slideshow, Select Photos, Sort Order & Refresh */}
+          {/* Right Controls: Reorder, Slideshow, Select Photos, Sort Order & Refresh */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            {/* Reorder Button */}
+            {items.length > 1 && !isSelectMode && !isReorderMode && (
+              <button
+                onClick={handleStartReorder}
+                className="px-3 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm cursor-pointer"
+                title="Drag and reorder photo positions"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 text-gold-600" />
+                <span>Reorder</span>
+              </button>
+            )}
+
             {/* Play Slideshow Button */}
-            {items.length > 0 && !isSelectMode && (
+            {items.length > 0 && !isSelectMode && !isReorderMode && (
               <button
                 onClick={onStartSlideshow}
                 className="px-3 py-1.5 rounded-full text-xs font-sans font-medium transition flex items-center gap-1.5 bg-white border border-gold-200 text-royal-espresso hover:border-gold-400 hover:bg-gold-50 shadow-sm"
@@ -211,7 +325,7 @@ export function Gallery({
             )}
 
             {/* Multi-Select Toggle Button */}
-            {items.length > 0 && (
+            {items.length > 0 && !isReorderMode && (
               <button
                 onClick={() => {
                   setIsSelectMode(!isSelectMode);
@@ -229,28 +343,79 @@ export function Gallery({
             )}
 
             {/* Sort Toggle */}
-            <div className="flex items-center gap-1 bg-white border border-gold-200 rounded-full px-2.5 py-1.5 text-xs text-royal-espresso font-sans">
-              <ArrowUpDown className="w-3 h-3 text-gold-600" />
-              <button
-                onClick={() => setSortOrder(sortOrder === 'oldest' ? 'newest' : 'oldest')}
-                className="font-medium text-gold-800 hover:text-gold-900 capitalize"
-                title={sortOrder === 'oldest' ? 'Showing insertion order (First added first)' : 'Showing newest first'}
-              >
-                {sortOrder === 'oldest' ? 'First Added' : 'Newest'}
-              </button>
-            </div>
+            {!isReorderMode && (
+              <div className="flex items-center gap-1 bg-white border border-gold-200 rounded-full px-2.5 py-1.5 text-xs text-royal-espresso font-sans">
+                <ArrowUpDown className="w-3 h-3 text-gold-600" />
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'oldest' ? 'newest' : 'oldest')}
+                  className="font-medium text-gold-800 hover:text-gold-900 capitalize"
+                  title={sortOrder === 'oldest' ? 'Showing custom / first added order' : 'Showing newest first'}
+                >
+                  {sortOrder === 'oldest' ? 'First Added' : 'Newest'}
+                </button>
+              </div>
+            )}
 
             {/* Refresh */}
-            <button
-              onClick={onRefresh}
-              className="p-1.5 sm:p-2 rounded-full bg-white border border-gold-200 text-royal-espresso/70 hover:text-gold-700 hover:border-gold-400 transition"
-              aria-label="Refresh gallery"
-              title="Refresh gallery"
-            >
-              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
+            {!isReorderMode && (
+              <button
+                onClick={onRefresh}
+                className="p-1.5 sm:p-2 rounded-full bg-white border border-gold-200 text-royal-espresso/70 hover:text-gold-700 hover:border-gold-400 transition"
+                aria-label="Refresh gallery"
+                title="Refresh gallery"
+              >
+                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Reorder Mode Banner */}
+        {isReorderMode && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-gold-100 via-royal-cream to-gold-100 border border-gold-300 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-royal-espresso animate-in slide-in-from-top-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gold-200 border border-gold-400 flex items-center justify-center shrink-0">
+                <GripVertical className="w-5 h-5 text-gold-800" />
+              </div>
+              <div>
+                <span className="font-serif text-sm sm:text-base font-bold text-royal-espresso block leading-tight">
+                  Reorder Mode Active ({reorderList.length} photos)
+                </span>
+                <span className="text-[11px] sm:text-xs text-royal-espresso/75 font-sans block mt-0.5">
+                  Drag photos or tap <strong>Earlier / Later</strong> to arrange. Tap <strong>Save Order</strong> when finished.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                onClick={handleCancelReorder}
+                disabled={isSavingOrder}
+                className="px-4 py-2 rounded-full bg-white border border-gold-300 text-royal-espresso hover:bg-gold-50 text-xs font-sans font-semibold transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleSaveReorder}
+                disabled={isSavingOrder}
+                className="px-5 py-2 rounded-full bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white text-xs font-sans font-semibold tracking-wider uppercase shadow-royal flex items-center gap-1.5 transition"
+              >
+                {isSavingOrder ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Order</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Loading Skeleton */}
         {isLoading && (
@@ -265,7 +430,7 @@ export function Gallery({
         )}
 
         {/* Empty State */}
-        {!isLoading && items.length === 0 && (
+        {!isLoading && activeItems.length === 0 && (
           <div className="text-center py-20 px-4 rounded-2xl border-2 border-dashed border-gold-200 bg-white/60 max-w-2xl mx-auto my-6">
             <div className="w-16 h-16 rounded-full bg-gold-100/70 border border-gold-300 text-gold-700 flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-gold-600" />
@@ -299,11 +464,11 @@ export function Gallery({
         )}
 
         {/* Populated Gallery: Row-wise order (1 2 / 3 4 / 5 6 ...) with 100% complete natural photos */}
-        {!isLoading && items.length > 0 && (
+        {!isLoading && activeItems.length > 0 && (
           <div className={`w-full grid ${gridColsClass} gap-1.5 sm:gap-2.5 items-start`}>
-            {columnBuckets.map((colItems, colIdx) => (
+            {columnBuckets.map((bucket, colIdx) => (
               <div key={colIdx} className="flex flex-col gap-1.5 sm:gap-2.5 w-full">
-                {colItems.map((item) => (
+                {bucket.map(({ item, index }) => (
                   <PhotoCard
                     key={item.id}
                     item={item}
@@ -317,6 +482,18 @@ export function Gallery({
                     isSelected={selectedIds.has(item.id)}
                     onToggleSelect={handleToggleSelect}
                     onLongPress={handleLongPress}
+                    isReorderMode={isReorderMode}
+                    reorderIndex={index}
+                    canMoveEarlier={index > 0}
+                    canMoveLater={index < activeItems.length - 1}
+                    onMoveEarlier={() => handleMoveItem(index, index - 1)}
+                    onMoveLater={() => handleMoveItem(index, index + 1)}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    isDragging={draggedId === item.id}
+                    isDragOver={dragOverId === item.id}
                   />
                 ))}
               </div>

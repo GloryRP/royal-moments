@@ -33,11 +33,18 @@ export function useGallery(favouritesSet) {
 
   const addMediaItem = useCallback((newRecord) => {
     // Preserve insertion order: new uploads append to the end of the collection
-    setMedia((prev) => [...prev, newRecord]);
+    setMedia((prev) => {
+      const nextOrder = prev.length + 1;
+      return [...prev, { ...newRecord, display_order: nextOrder }];
+    });
   }, []);
 
   const removeMediaItem = useCallback((id) => {
     setMedia((prev) => prev.filter(m => m.id !== id));
+  }, []);
+
+  const reorderMedia = useCallback((newOrderedList) => {
+    setMedia(newOrderedList.map((item, idx) => ({ ...item, display_order: idx + 1 })));
   }, []);
 
   // Filter & Sort
@@ -49,8 +56,13 @@ export function useGallery(favouritesSet) {
       result = result.filter((item) => favouritesSet && favouritesSet.has(item.id));
     }
 
-    // 2. Sort
+    // 2. Sort: by display_order first, then fallback to created_at
     result.sort((a, b) => {
+      const orderA = a.display_order ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.display_order ?? Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) {
+        return sortOrder === 'newest' ? orderB - orderA : orderA - orderB;
+      }
       const dateA = new Date(a.created_at).getTime() || 0;
       const dateB = new Date(b.created_at).getTime() || 0;
       return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
@@ -64,6 +76,8 @@ export function useGallery(favouritesSet) {
 
   return {
     media,
+    setMedia,
+    reorderMedia,
     filteredMedia,
     totalCount: media.length,
     photoCount,

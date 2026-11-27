@@ -21,6 +21,7 @@ export async function fetchMediaList() {
     const { data, error } = await supabase
       .from('media')
       .select('*')
+      .order('display_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -128,6 +129,52 @@ export async function deleteMediaRecord(id, filePath, passcode) {
     const local = getLocalDemoMedia().filter(m => m.id !== id);
     localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(local));
   } catch (e) {}
+
+  return result;
+}
+
+/**
+ * Updates the display order of media items in the database
+ * 
+ * @param {Array<string>} orderedIds - Array of media IDs in new order
+ */
+export async function saveMediaOrder(orderedIds) {
+  if (!orderedIds || orderedIds.length === 0) return { success: true };
+
+  if (!isSupabaseConfigured()) {
+    const local = getLocalDemoMedia();
+    const map = new Map(local.map(item => [item.id, item]));
+    const reordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_MEDIA_KEY, JSON.stringify(reordered));
+    } catch (e) {}
+    return { success: true };
+  }
+
+  // Strategy 1: Direct Supabase RPC
+  try {
+    const { error } = await supabase.rpc('update_media_order', {
+      p_ordered_ids: orderedIds
+    });
+    if (!error) {
+      return { success: true };
+    }
+    console.warn('Direct RPC reorder returned error, trying API endpoint:', error);
+  } catch (rpcErr) {
+    console.warn('Direct RPC reorder failed, trying API endpoint:', rpcErr);
+  }
+
+  // Strategy 2: Serverless endpoint fallback
+  const res = await fetch('/api/reorder-media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderedIds })
+  });
+
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(result.error || 'Failed to save new order');
+  }
 
   return result;
 }
