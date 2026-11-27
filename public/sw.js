@@ -1,5 +1,5 @@
 // Service worker for PWA installability and offline support
-const CACHE_NAME = 'ramulas-presents-v1';
+const CACHE_NAME = 'ramulas-presents-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

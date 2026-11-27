@@ -23,18 +23,12 @@ export function InstallAppModal({ isOpen, onClose, deferredPrompt, onPromptInsta
 
         {/* Modal Header with App Icon */}
         <div className="text-center mb-5">
-          <div className="relative w-16 h-16 mx-auto mb-3 flex items-center justify-center">
-            <svg viewBox="0 0 40 40" className="w-16 h-16 drop-shadow-md" fill="none">
-              <path
-                d="M20 34.5 C20 34.5 4.5 23.5 4.5 13 C4.5 7.5 9 4 14.5 4 C17.8 4 20 6.2 20 6.2 C20 6.2 22.2 4 25.5 4 C31 4 35.5 7.5 35.5 13 C35.5 23.5 20 34.5 20 34.5 Z"
-                fill="#FAF6EC"
-                stroke="#C5A059"
-                strokeWidth="1.8"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center pt-0.5 text-gold-800 font-cinzel font-bold text-xs tracking-tighter select-none">
-              P &amp; S
-            </span>
+          <div className="relative w-20 h-20 mx-auto mb-3 rounded-2xl overflow-hidden border-2 border-gold-400 shadow-royal-lg">
+            <img 
+              src="/icon-192.png" 
+              alt="Ramula's Presents App Icon" 
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <h3 className="font-serif text-2xl font-bold text-royal-espresso">
