@@ -76,7 +76,28 @@ export function Lightbox({
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   }, [items.length]);
 
-  // Slideshow auto-advance: plays each photo for 3.5s, then automatically stops after the last image and returns to Explore Memories
+  const SLIDESHOW_DURATION = 4000; // 4 seconds per photo for a relaxed, luxury viewing experience
+
+  // Preload upcoming images so slideshow transitions are instantaneous with zero download delay
+  useEffect(() => {
+    if (!isOpen || items.length <= 1) return;
+
+    const preloadIndices = [
+      (currentIndex + 1) % items.length,
+      (currentIndex + 2) % items.length
+    ];
+
+    preloadIndices.forEach((idx) => {
+      const itemToPreload = items[idx];
+      const src = itemToPreload?.url || itemToPreload?.file_path;
+      if (src && itemToPreload?.media_type !== 'video') {
+        const img = new Image();
+        img.src = src;
+      }
+    });
+  }, [currentIndex, isOpen, items]);
+
+  // Slideshow auto-advance: plays each photo for 4s with smooth crossfade, then returns to Explore Memories
   useEffect(() => {
     if (!isOpen || !isSlideshowRunning || items.length === 0) return;
 
@@ -88,7 +109,7 @@ export function Lightbox({
           const el = document.getElementById('gallery');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }, 300);
-      }, 3500);
+      }, SLIDESHOW_DURATION);
       return () => clearTimeout(singleTimer);
     }
 
@@ -109,7 +130,7 @@ export function Lightbox({
         }
         return prev + 1;
       });
-    }, 3500);
+    }, SLIDESHOW_DURATION);
 
     return () => clearInterval(timer);
   }, [isOpen, isSlideshowRunning, items.length, onClose]);
@@ -273,7 +294,7 @@ export function Lightbox({
               key={currentIndex}
               initial={{ width: '0%' }}
               animate={{ width: '100%' }}
-              transition={{ duration: 3.5, ease: 'linear' }}
+              transition={{ duration: SLIDESHOW_DURATION / 1000, ease: 'linear' }}
               className="h-full bg-gold-400"
             />
           </div>
@@ -451,24 +472,38 @@ export function Lightbox({
           onMouseUp={!isVideo ? handleMouseUp : undefined}
           onMouseLeave={!isVideo ? handleMouseUp : undefined}
         >
-          <div className="relative max-h-full max-w-full flex items-center justify-center overflow-hidden">
+          <div className="relative max-h-full max-w-full grid grid-cols-1 grid-rows-1 items-center justify-center overflow-hidden">
             {isVideo ? (
-              <video
-                src={currentItem.url || currentItem.file_path}
-                controls
-                autoPlay
-                playsInline
-                className="max-h-[76vh] max-w-[90vw] sm:max-w-[80vw] rounded-lg shadow-2xl object-contain bg-black"
-              />
+              <div className="col-start-1 row-start-1 flex items-center justify-center">
+                <video
+                  src={currentItem.url || currentItem.file_path}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-h-[76vh] max-w-[90vw] sm:max-w-[80vw] rounded-lg shadow-2xl object-contain bg-black"
+                />
+              </div>
             ) : (
-              <AnimatePresence mode="wait">
+              <AnimatePresence initial={false}>
                 <motion.div
                   key={currentItem.id || currentIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: 'easeInOut' }}
-                  className="flex items-center justify-center max-h-full max-w-full"
+                  initial={{
+                    opacity: 0,
+                    scale: isSlideshowRunning ? 1.04 : 1
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: isSlideshowRunning ? 0.98 : 1
+                  }}
+                  transition={{
+                    duration: isSlideshowRunning ? 0.85 : 0.3,
+                    ease: [0.22, 1, 0.36, 1]
+                  }}
+                  className="col-start-1 row-start-1 flex items-center justify-center max-h-full max-w-full"
                 >
                   <img
                     src={currentItem.url || currentItem.file_path}
